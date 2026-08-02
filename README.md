@@ -132,6 +132,7 @@ and its signed residual.
 - [Mathematical method and algorithms](docs/theory.md)
 - [Python API and configuration](docs/api.md)
 - [Distributed generation and maps format](docs/distributed-generation.md)
+- [Three-machine production handoff](docs/three-machine-generation.md)
 - [Accuracy certificates and limitations](docs/accuracy.md)
 - [Numerical validation plan](docs/validation-plan.md)
 - [Development and tests](docs/development.md)
