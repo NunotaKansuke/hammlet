@@ -19,7 +19,7 @@ import numpy as np
 
 from .atlas import PolarAtlas
 
-_FORMAT = "adamgrid-bucketed-polar-atlas"
+_FORMAT = "hammlet-bucketed-fourier-maps"
 _VERSION = 1
 
 
@@ -196,6 +196,11 @@ class BucketedPolarAtlas:
     def n_maps(self) -> int:
         """Alias for :attr:`total_maps`, matching the manifest field."""
         return self.total_maps
+
+    @property
+    def map_ids(self) -> np.ndarray:
+        """Global map identifiers in deterministic bucket order."""
+        return np.asarray(self._ordered_map_ids, dtype=np.int64)
 
     @property
     def map_parameters(self) -> np.ndarray:

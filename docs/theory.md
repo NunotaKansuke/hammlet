@@ -78,8 +78,11 @@ intervals coexist.
 A fixed number of angles gives arc length `r Delta phi`, which grows with
 radius. Hammlet addresses this in two complementary places:
 
-1. Radial nodes combine a geometric inner grid with a linear outer tail, so
-   large-radius annuli do not become arbitrarily wide.
+1. Each `(s,q)` bucket evaluates sharp-rho pilot maps on a dense quadratic
+   radial pilot grid. Leave-one-radius-out spectral interpolation error defines
+   a difficulty density. Sixty-five percent of the fixed node budget follows
+   its cumulative distribution; the remainder stays uniformly distributed so
+   no outer interval can become arbitrarily wide.
 2. Angular sampling is driven by retained-coefficient convergence and caustic
    proximity, not by a single fixed `N_phi`. A caustic-guarded outer ring can
    therefore use the same fine angular work limit as an inner ring.
@@ -179,7 +182,22 @@ L_i\le U_{(K)}.
 This prevents a hard central-chi-square cutoff from discarding a candidate that
 can still enter the true top K under the supplied error envelope.
 
-## 7. Complexity
+## 7. High-mode seed refinement
+
+After interval-safe selection and clustering, the normal handoff objective uses
+all stored modes (normally `M=512`) and cubic radial interpolation. For parameter vector
+
+\[
+p=(t_0,u_0,\log t_E,\alpha),
+\]
+
+a JAX-batched coordinate pattern search tests the incumbent and both directions
+of every axis. Two shallow levels cost 17 evaluations per seed. The best 32
+seeds also race their discrete `(s,q,rho)` neighbours, sweep six correlated
+axis pairs, and run ten deeper levels. This remains a refinement of the stored
+Fourier maps, not a continuous binary-lens physical fit.
+
+## 8. Complexity
 
 For `N_map` maps, `N_r` radial nodes, `M` modes, `N_obs` observations and
 `N_alpha` angles:

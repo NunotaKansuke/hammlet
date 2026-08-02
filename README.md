@@ -33,9 +33,10 @@ grid = ParameterGrid(
 build_maps("maps", grid, config=MapConfig())
 ```
 
-`MapConfig()` uses the production defaults `M=384`, 256 radial nodes, and
-adaptive angular sampling up to 8192 points near caustics. All accuracy/work
-parameters can be overridden explicitly.
+`MapConfig()` stores through `M=512`. Maps are grouped into `(s,q)` buckets;
+each bucket uses the complete rho axis to place 256 radial nodes around measured
+spectral difficulty. Angular sampling independently adapts up to 8192 points
+near caustics. Search reads only the modes needed by each stage.
 
 The same API accepts logarithmic axes without manual exponentiation:
 
@@ -70,7 +71,13 @@ print(best.chi2_lower, best.chi2_upper)
 Multiple observatories are separate `Dataset` objects, so each receives its own
 analytically profiled source and blend flux. Multiple nearby `Geometry` seeds
 search `(t0,u0,tE)` as one compiled batch. The result defaults to 300 seeds for
-the next pipeline stage.
+the next pipeline stage. The standard path ranks at `M=32`, rescans at `M=128`
+with cubic radial interpolation, then refines independent candidates at `M=512`
+with JAX-batched pattern and neighbour-map searches.
+
+The FFT-stage `chi2_lower/upper` interval is preserved separately from the
+refined coefficient-space chi-square. Refinement never claims to be the final
+scientific VBM fit.
 
 ## Multi-machine generation
 
@@ -83,8 +90,9 @@ for s in s_grid:
             map_id += 1
 ```
 
-Split the ordered table into, for example, 32 contiguous jobs. Every machine
-uses the same JSON file and output filesystem:
+Radial-layout buckets never split a `(s,q)` cell's rho axis. Distributed parts
+are contiguous groups of these complete buckets, so every machine can derive
+the same adaptive layout independently from the same JSON configuration.
 
 ```bash
 hammlet build-maps examples/distributed_build.json /shared/hammlet-maps \

@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 
 import numpy as np
 
 from ._core.atlas import PolarAtlas
+from ._core.bucketed_atlas import BucketedPolarAtlas
 from ._core.radial import interpolate_coefficients
 
 
 class Maps:
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path).resolve()
-        self._core = PolarAtlas(self.path)
+        manifest = json.loads((self.path / "manifest.json").read_text())
+        self._bucketed = manifest.get("format") == "hammlet-bucketed-fourier-maps"
+        self._core = (
+            BucketedPolarAtlas(self.path) if self._bucketed else PolarAtlas(self.path)
+        )
 
     @classmethod
     def open(cls, path: str | Path) -> "Maps":
@@ -30,6 +36,17 @@ class Maps:
 
     @property
     def radial_nodes(self) -> np.ndarray:
+        if self._bucketed:
+            raise AttributeError(
+                "radial nodes vary by (s,q) bucket; use radial_nodes_for(map_id)"
+            )
+        return np.asarray(self._core.radial_nodes)
+
+    def radial_nodes_for(self, map_id: int) -> np.ndarray:
+        if self._bucketed:
+            nodes, _, _ = self._core.coefficient_row(int(map_id), m_max=0)
+            return nodes
+        self._core.parameters_for(int(map_id))
         return np.asarray(self._core.radial_nodes)
 
     @property
@@ -47,12 +64,18 @@ class Maps:
     ) -> np.ndarray:
         """Reconstruct a magnification map at arbitrary Cartesian points."""
         modes = self.m_max if m_max is None else int(m_max)
-        coefficients = self._core.coefficient_rows([map_id], m_max=modes)[int(map_id)][1]
+        if self._bucketed:
+            nodes, _, coefficients = self._core.coefficient_row(map_id, m_max=modes)
+        else:
+            nodes = np.asarray(self._core.radial_nodes)
+            coefficients = self._core.coefficient_rows([map_id], m_max=modes)[
+                int(map_id)
+            ][1]
         x, y = np.broadcast_arrays(np.asarray(x, float), np.asarray(y, float))
         radius = np.hypot(x, y).ravel()
         phase = np.arctan2(y, x).ravel()
         local = interpolate_coefficients(
-            coefficients, radius, self.radial_nodes, order=radial_order
+            coefficients, radius, nodes, order=radial_order
         )
         mode = np.arange(modes + 1)
         excess = np.real(

@@ -5,8 +5,8 @@
     "log_rho": [-3.5, -3.0, -2.5]
   },
   "maps": {
-    "m_max": 384,
-    "core_m_max": 96,
+    "m_max": 512,
+    "core_m_max": 128,
     "radial_nodes": 256
   }
 }

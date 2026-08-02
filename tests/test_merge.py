@@ -4,6 +4,7 @@ import numpy as np
 
 from hammlet import Maps, merge_maps
 from hammlet._core.atlas_builder import MapBuildSpec, PolarAtlasBuilder
+from hammlet._core.bucketed_atlas import write_bucket_manifest
 
 
 class ConstantEvaluator:
@@ -16,6 +17,7 @@ class ConstantEvaluator:
 
 def write_part(root, index, map_ids):
     part = root / "parts" / f"part-{index:05d}-of-00002"
+    child = part / f"s{index:03d}_q000"
     builder = PolarAtlasBuilder(
         np.linspace(0.0, 2.0, 8),
         n_phi_build=8,
@@ -24,7 +26,7 @@ def write_part(root, index, map_ids):
         shard_size=1,
     )
     builder.build(
-        part,
+        child,
         [
             MapBuildSpec(
                 map_id,
@@ -35,6 +37,20 @@ def write_part(root, index, map_ids):
             )
             for map_id in map_ids
         ],
+    )
+    write_bucket_manifest(
+        part,
+        [
+            {
+                "name": child.name,
+                "path": child.name,
+                "count": len(map_ids),
+                "logs": [0.0, 0.2],
+                "logq": [-3.0, -3.0],
+                "map_ids": map_ids,
+            }
+        ],
+        {"radial_layout": {"test": True}},
     )
     metadata = {
         "grid": {"s": [1.0, 1.1, 1.2], "q": [0.001], "rho": [0.001]},

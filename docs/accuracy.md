@@ -75,8 +75,8 @@ rescan. The optimal setting minimizes
 T(M)=T_{\rm base}(M)+N_{\rm rescue}(M)T_{\rm full/map}.
 \]
 
-Hammlet stores a larger production budget (`M=384`) while defaulting the search
-to a cheap base pass (`M=32`) and a targeted full pass (`M=96`). Users should
+Hammlet stores a larger production budget (`M=512`) while defaulting the search
+to a cheap base pass (`M=32`), a targeted cubic pass (`M=128`), and high-mode
+seed refinement using all stored modes (`M=512`). Users should
 benchmark the frontier on representative smooth, central-caustic, and
 planetary-caustic events before changing production defaults.
-

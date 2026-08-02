@@ -13,14 +13,18 @@ Important defaults:
 
 | field | default | meaning |
 |---|---:|---|
-| `m_max` | 384 | maximum stored angular mode |
-| `core_m_max` | 96 | modes in the small core coefficient file |
-| `radial_nodes` | 256 | common radial samples per map |
+| `m_max` | 512 | maximum stored angular mode |
+| `core_m_max` | 128 | modes in the small core coefficient file |
+| `radial_nodes` | 256 | samples shared inside each `(s,q)` bucket |
 | `radial_max` | 3.5 | largest map-frame radius |
 | `min_n_phi` | 512 | initial smooth-ring samples |
 | `caustic_base_n_phi` | 2048 | initial guarded-ring samples |
 | `max_n_phi` | 8192 | maximum uniform angular work |
-| `diagnostic_m_max` | 768 | modes used for tail/error diagnosis |
+| `diagnostic_m_max` | 1024 | modes used for tail/error diagnosis |
+| `radial_s_buckets` | 4 | number of radial-layout groups across s |
+| `radial_q_buckets` | 4 | number of radial-layout groups across q |
+| `radial_pilot_maps` | 8 | sharp-rho pilot maps per bucket |
+| `radial_adaptive_fraction` | 0.65 | radial nodes allocated by measured difficulty |
 
 The power-of-two angular limits are validated by the numerical core.
 
@@ -37,7 +41,8 @@ partial directory.
 ## Maps
 
 `Maps.open(path)` memory-maps the stored arrays. Useful members are
-`map_ids`, `parameters`, `radial_nodes`, and `m_max`.
+`map_ids`, `parameters`, and `m_max`. Radial nodes vary by bucket and are
+available through `radial_nodes_for(map_id)`.
 
 ```python
 A = maps.magnification(map_id, x, y, m_max=96)
@@ -58,12 +63,17 @@ radians and `tE` must be positive.
 result = maps.search(datasets, geometries, config=SearchConfig())
 ```
 
-The default two-pass scan uses `M=32, N_alpha=128` globally and
-`M=96, N_alpha=512` on selected candidates. `candidate_count=300` controls the
-handoff list, not the number of map evaluations. Candidate fields are physical
-`s,q,rho,alpha`, geometry index, central chi-square, lower/upper bounds, and
+The default scan uses `M=32, N_alpha=128` with linear radial interpolation for
+global ranking and `M=128, N_alpha=512` with cubic interpolation for selected
+maps. Certified chi-square intervals decide which maps cannot yet be discarded.
+
+Up to 300 independent candidates are then evaluated at `M=512` (or the largest
+mode stored by older/smaller maps). All candidates
+receive two batched pattern-search levels. The best 32 additionally compare up
+to 26 neighbouring maps and receive one pairwise plus ten deep pattern levels.
+Candidate fields include starting/final map IDs, refined `(t0,u0,tE,alpha)`,
+physical `(s,q,rho)`, FFT and refined chi-square, FFT lower/upper bounds, and
 spectral risk.
 
 The first call includes JAX compilation. Benchmark steady-state throughput
 separately from cold-start latency.
-

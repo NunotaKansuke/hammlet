@@ -3,12 +3,15 @@
 ## Ordered parameter space
 
 The Cartesian parameter grid is flattened deterministically with `rho` varying
-fastest, then `q`, then `s`. `Partition(i,n)` divides that ordered table into
-`n` contiguous, nearly equal slices using integer linspace boundaries. The
-slices are disjoint and their concatenation is the original table.
+fastest, then `q`, then `s`. Before partitioning, Hammlet forms `(s,q)` radial
+layout buckets. A bucket always contains every rho value for its `(s,q)` cells,
+because its sharpest/smallest-rho maps determine where radial resolution is
+needed. `Partition(i,n)` divides the ordered bucket list, never an individual
+rho axis.
 
-Contiguous assignment makes logs easy to audit and generally keeps nearby lens
-parameters on the same machine. It does not require inter-machine messaging.
+Contiguous assignment keeps nearby lens parameters together and requires no
+inter-machine messaging. `part_count` cannot exceed the number of non-empty
+radial buckets.
 
 ## Scheduler example
 
@@ -43,20 +46,19 @@ unchanged.
 maps/
   manifest.json
   hammlet-build.json
-  radial_nodes.npy
-  map_ids.npy
-  map_parameters.npy
-  shard_00000/
+  s000_q000/
+    manifest.json
+    radial_nodes.npy
+    radial_pilot_map_ids.npy
+    radial_pilot_radii.npy
+    radial_pilot_difficulty.npy
     map_ids.npy
-    x_coeff.npy
-    x_coeff_extension.npy
-    x2_coeff.npy
-    x2_coeff_extension.npy
-    certified_error.npy
-    certified_error_full.npy
-    reconstruction_error.npy
-    reconstruction_error_full.npy
-    deviation_envelope.npy
+    map_parameters.npy
+    shard_0000/
+      x_coeff.npy
+      x_coeff_extension.npy
+      certified_error.npy
+      certified_error_full.npy
 ```
 
 Core and extension mode files allow a low-mode pass to avoid reading production

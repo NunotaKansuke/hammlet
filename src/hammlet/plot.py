@@ -125,17 +125,24 @@ def plot_vbm_comparison(
     )
     figure.colorbar(residual_image, ax=axes[1, 0], label=r"$\Delta A$")
 
-    coefficients = maps._core.coefficient_rows([map_id], m_max=modes)[map_id][1]
+    if maps._bucketed:
+        radial_nodes, _, coefficients = maps._core.coefficient_row(
+            map_id, m_max=modes
+        )
+    else:
+        radial_nodes = maps.radial_nodes
+        coefficients = maps._core.coefficient_rows([map_id], m_max=modes)[map_id][1]
     amplitude = np.maximum(np.abs(coefficients), 1.0e-12)
     coefficient_image = axes[1, 1].pcolormesh(
         np.arange(modes + 1),
-        maps.radial_nodes,
+        radial_nodes,
         np.log10(amplitude),
         cmap="magma",
         shading="nearest",
         rasterized=True,
     )
     axes[1, 1].set_yscale("symlog", linthresh=1.0e-4)
+    axes[1, 1].set_ylim(0.0, float(radial_nodes[-1]))
     axes[1, 1].set_title(r"Stored coefficient amplitude $|c_m(r)|$")
     axes[1, 1].set(xlabel="Fourier mode m", ylabel=r"radius $r/\theta_E$")
     figure.colorbar(
