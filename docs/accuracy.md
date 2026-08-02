@@ -10,13 +10,13 @@ remainder inequality gives
 
 $$
 \max_I |r|\le
-\max(|r(a)|,|r(a+h)|)+\frac{h^2}{8}\lVert P_D''\rVert_{\infty,I}.
+\max(|r(a)|,|r(a+h)|)+\frac{h^2}{8}\|P_D''\|_{\infty,I}.
 $$
 
 The global derivative norm has the computable upper bound
 
 $$
-\lVert P_D''\rVert_\infty
+\|P_D''\|_\infty
 \le 2\sum_{m=1}^{D}m^2|c_m|.
 $$
 

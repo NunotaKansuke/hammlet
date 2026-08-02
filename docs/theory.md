@@ -27,7 +27,7 @@ $$
 Because $X$ is real,
 
 $$
-X_M(r,\phi)=c_0(r)+2\operatorname{Re}
+X_M(r,\phi)=c_0(r)+2\mathrm{Re}
 \sum_{m=1}^{M} c_m(r)e^{im\phi}.
 $$
 
@@ -98,7 +98,7 @@ For a rectilinear seed $(t_0,u_0,t_E)$, define
 $$
 \tau_i=\frac{t_i-t_0}{t_E},\qquad
 r_i=\sqrt{\tau_i^2+u_0^2},\qquad
-\psi_i=\operatorname{atan2}(-u_0,-\tau_i).
+\psi_i=\mathrm{atan2}(-u_0,-\tau_i).
 $$
 
 The trajectory angle $\alpha$ shifts $\psi_i$ by $\alpha$. Radial interpolation is
@@ -112,7 +112,7 @@ Consequently
 
 $$
 x_i(\alpha)=\widetilde c_{i0}+
-2\operatorname{Re}\sum_{m=1}^{M}
+2\mathrm{Re}\sum_{m=1}^{M}
 \widetilde c_{im}e^{im\psi_i}e^{im\alpha}.
 $$
 
