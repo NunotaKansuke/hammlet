@@ -19,7 +19,7 @@ For a Slurm array:
 #SBATCH --cpus-per-task=1
 export OMP_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
-hammlet build config.json /shared/run-001 \
+hammlet build-maps config.json /shared/run-001 \
   --part-index "$SLURM_ARRAY_TASK_ID" --part-count 32
 ```
 
@@ -35,12 +35,12 @@ unchanged.
 - An interrupted job has only a hidden `.partial-PID` directory.
 - Remove a stale partial directory only after confirming its process/job is no
   longer alive, then resubmit the same part index.
-- `merge` never deletes or modifies input parts.
+- `merge-maps` never deletes or modifies input parts.
 
-## Atlas directory
+## Maps directory
 
 ```text
-atlas/
+maps/
   manifest.json
   hammlet-build.json
   radial_nodes.npy
@@ -66,5 +66,4 @@ mode budgets, builder settings, certificate semantics, and shard membership.
 
 `hammlet-build.json` records the physical grid, generation config, partition,
 and selected global map IDs. Merge validates these records before copying
-shards into the final atlas namespace.
-
+shards into the final maps namespace.

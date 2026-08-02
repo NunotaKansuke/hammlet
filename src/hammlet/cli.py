@@ -1,4 +1,4 @@
-"""Command-line entry point for schedulers and multi-machine atlas builds."""
+"""Command-line entry point for schedulers and multi-machine map builds."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ import argparse
 import json
 from pathlib import Path
 
-from .build import build_atlas, merge_parts
-from .config import AtlasConfig, ParameterGrid, Partition
+from .build import build_maps, merge_maps
+from .config import MapConfig, ParameterGrid, Partition
 
 
 def _config(path: Path):
@@ -17,19 +17,19 @@ def _config(path: Path):
         grid = ParameterGrid.from_log10(**grid_data)
     else:
         grid = ParameterGrid(**grid_data)
-    return grid, AtlasConfig(**content.get("atlas", {}))
+    return grid, MapConfig(**content.get("maps", {}))
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="hammlet")
     commands = parser.add_subparsers(dest="command", required=True)
-    build = commands.add_parser("build", help="build one atlas or one partition")
+    build = commands.add_parser("build-maps", help="build maps or one partition")
     build.add_argument("config", type=Path)
     build.add_argument("output", type=Path)
     build.add_argument("--part-index", type=int, default=0)
     build.add_argument("--part-count", type=int, default=1)
     build.add_argument("--progress-every", type=int, default=1)
-    merge = commands.add_parser("merge", help="merge a complete set of parts")
+    merge = commands.add_parser("merge-maps", help="merge a complete set of parts")
     merge.add_argument("output", type=Path)
     merge.add_argument("--destination", type=Path)
     return parser
@@ -37,9 +37,9 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
-    if args.command == "build":
+    if args.command == "build-maps":
         grid, config = _config(args.config)
-        result = build_atlas(
+        result = build_maps(
             args.output,
             grid,
             config=config,
@@ -47,7 +47,6 @@ def main(argv: list[str] | None = None) -> int:
             progress_every=args.progress_every,
         )
     else:
-        result = merge_parts(args.output, destination=args.destination)
+        result = merge_maps(args.output, destination=args.destination)
     print(result)
     return 0
-

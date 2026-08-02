@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "hammlet"
 version = "0.1.0"
-description = "Fast Fourier atlases and seed searches for binary microlensing"
+description = "Fast Fourier maps and seed searches for binary microlensing"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
@@ -31,4 +31,3 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 88
 target-version = "py310"
-

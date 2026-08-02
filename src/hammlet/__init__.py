@@ -1,13 +1,13 @@
-"""Hammlet: fast binary-microlensing Fourier atlases and seed searches."""
+"""Hammlet: fast binary-microlensing map building and seed searches."""
 
-from .atlas import Atlas
-from .build import build_atlas, merge_parts
-from .config import AtlasConfig, ParameterGrid, Partition, SearchConfig
+from .build import build_maps, merge_maps
+from .config import MapConfig, ParameterGrid, Partition, SearchConfig
+from .maps import Maps
 from .search import Candidate, Dataset, Geometry, SearchResult, search
 
 __all__ = [
-    "Atlas",
-    "AtlasConfig",
+    "MapConfig",
+    "Maps",
     "Candidate",
     "Dataset",
     "Geometry",
@@ -15,8 +15,7 @@ __all__ = [
     "Partition",
     "SearchConfig",
     "SearchResult",
-    "build_atlas",
-    "merge_parts",
+    "build_maps",
+    "merge_maps",
     "search",
 ]
-

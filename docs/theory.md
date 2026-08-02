@@ -84,7 +84,7 @@ radius. Hammlet addresses this in two complementary places:
    proximity, not by a single fixed `N_phi`. A caustic-guarded outer ring can
    therefore use the same fine angular work limit as an inner ring.
 
-The atlas cost remains bounded by `max_n_phi`; this is an accuracy/work policy,
+The per-ring generation cost remains bounded by `max_n_phi`; this is an accuracy/work policy,
 not a proof that every continuous radial feature is resolved. See
 [accuracy.md](accuracy.md).
 
@@ -156,7 +156,7 @@ necessary lag terms so the same radially interpolated light curve supplies both
 `A` and `A^2`. This avoids an inconsistent approximation in the normal matrix.
 
 Multiple datasets add their independently profiled chi-square values, while a
-geometry batch shares the same atlas coefficients.
+geometry batch shares the same map coefficients.
 
 ## 6. Multi-resolution selection
 
@@ -184,12 +184,11 @@ can still enter the true top K under the supplied error envelope.
 For `N_map` maps, `N_r` radial nodes, `M` modes, `N_obs` observations and
 `N_alpha` angles:
 
-- atlas construction is dominated by direct VBM calls and occurs once;
+- map construction is dominated by direct VBM calls and occurs once;
 - event-kernel construction is approximately `O(N_obs M)` per geometry;
-- atlas contraction is approximately `O(N_map N_r M)`;
+- map contraction is approximately `O(N_map N_r M)`;
 - the angular transform is approximately `O(N_map N_alpha log N_alpha)`.
 
 A naive direct loop instead repeats VBM/map interpolation for roughly
-`N_map N_alpha N_obs` points. Atlas coefficient arrays are memory-mapped and
+`N_map N_alpha N_obs` points. Map-coefficient arrays are memory-mapped and
 sharded, allowing bounded scans and sequential storage access.
-

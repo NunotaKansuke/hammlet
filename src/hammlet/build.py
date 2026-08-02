@@ -1,4 +1,4 @@
-"""Atlas construction, partitioning and merge operations."""
+"""Map construction, partitioning and merge operations."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from typing import Iterable
 
 import numpy as np
 
-from .config import AtlasConfig, ParameterGrid, Partition, default_radial_nodes
+from .config import MapConfig, ParameterGrid, Partition, default_radial_nodes
 from ._core.atlas_builder import MapBuildSpec
 from ._core.direct_vbm import (
     DirectSpectrumConfig,
@@ -20,7 +20,7 @@ from ._core.direct_vbm import (
 )
 
 
-def _spectrum_config(config: AtlasConfig) -> DirectSpectrumConfig:
+def _spectrum_config(config: MapConfig) -> DirectSpectrumConfig:
     return DirectSpectrumConfig(
         m_max=config.m_max,
         core_m_max=config.core_m_max,
@@ -36,7 +36,7 @@ def _spectrum_config(config: AtlasConfig) -> DirectSpectrumConfig:
     )
 
 
-def _specs(rows: np.ndarray, config: AtlasConfig) -> Iterable[MapBuildSpec]:
+def _specs(rows: np.ndarray, config: MapConfig) -> Iterable[MapBuildSpec]:
     for map_id_value, logs, logq, logrho in rows:
         yield MapBuildSpec(
             map_id=int(map_id_value),
@@ -53,21 +53,21 @@ def _specs(rows: np.ndarray, config: AtlasConfig) -> Iterable[MapBuildSpec]:
         )
 
 
-def build_atlas(
+def build_maps(
     output: str | Path,
     grid: ParameterGrid,
     *,
-    config: AtlasConfig | None = None,
+    config: MapConfig | None = None,
     partition: Partition | None = None,
     progress_every: int = 1,
 ) -> Path:
-    """Generate one complete atlas or one independently schedulable part.
+    """Generate one complete map collection or one schedulable part.
 
     For ``Partition(index=i, count=n)``, every machine receives the same grid
     and config and writes ``output/parts/part-iiiii-of-nnnnn``.  A private
     temporary directory is atomically renamed only after the part succeeds.
     """
-    config = config or AtlasConfig()
+    config = config or MapConfig()
     partition = partition or Partition()
     output = Path(output).resolve()
     rows = grid.table()[partition.rows(len(grid.table()))]
@@ -79,7 +79,7 @@ def build_atlas(
         else output / "parts" / f"part-{partition.index:05d}-of-{partition.count:05d}"
     )
     if destination.exists():
-        raise FileExistsError(f"atlas destination already exists: {destination}")
+        raise FileExistsError(f"map destination already exists: {destination}")
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_name(f".{destination.name}.partial-{os.getpid()}")
     if temporary.exists():
@@ -109,7 +109,7 @@ def build_atlas(
     return destination
 
 
-def merge_parts(output: str | Path, *, destination: str | Path | None = None) -> Path:
+def merge_maps(output: str | Path, *, destination: str | Path | None = None) -> Path:
     """Validate and merge all generated parts without recomputing coefficients."""
     output = Path(output).resolve()
     parts = sorted((output / "parts").glob("part-*-of-*"))
@@ -123,9 +123,9 @@ def merge_parts(output: str | Path, *, destination: str | Path | None = None) ->
     if any(record["grid"] != records[0]["grid"] for record in records[1:]):
         raise ValueError("parts were generated from different parameter grids")
     if any(record["config"] != records[0]["config"] for record in records[1:]):
-        raise ValueError("parts were generated with different atlas configs")
+        raise ValueError("parts were generated with different map configs")
 
-    destination = Path(destination or output / "atlas").resolve()
+    destination = Path(destination or output / "maps").resolve()
     if destination.exists():
         raise FileExistsError(f"merge destination already exists: {destination}")
     temporary = destination.with_name(f".{destination.name}.partial-{os.getpid()}")
@@ -141,7 +141,7 @@ def merge_parts(output: str | Path, *, destination: str | Path | None = None) ->
                 manifest[key] != first_manifest[key]
                 for key in ("m_max", "core_m_max", "coefficient_dtype", "n_r")
             ):
-                raise ValueError("part atlas formats are incompatible")
+                raise ValueError("part map formats are incompatible")
             all_ids.append(np.load(part / "map_ids.npy"))
             all_parameters.append(np.load(part / "map_parameters.npy"))
             diagnostic_path = part / "direct_diagnostics.npz"

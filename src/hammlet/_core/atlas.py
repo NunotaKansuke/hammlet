@@ -27,7 +27,7 @@ class PolarAtlas:
         )
         if (
             self.manifest.get("format")
-            not in {"hammlet-fourier-atlas", "adamgrid-polar-atlas"}
+            not in {"hammlet-fourier-maps", "hammlet-fourier-atlas"}
             or self.manifest.get("version") != 1
         ):
             raise ValueError("unsupported polar atlas format")

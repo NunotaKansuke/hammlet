@@ -1,18 +1,18 @@
-"""Minimal end-to-end search of an existing atlas."""
+"""Minimal end-to-end search of existing maps."""
 
 import numpy as np
 
-from hammlet import Atlas, Dataset, Geometry, SearchConfig
+from hammlet import Dataset, Geometry, Maps, SearchConfig
 
 
-atlas = Atlas.open("atlas")
+maps = Maps.open("maps")
 data = Dataset(
     time=np.loadtxt("lightcurve.dat")[:, 0],
     flux=np.loadtxt("lightcurve.dat")[:, 1],
     error=np.loadtxt("lightcurve.dat")[:, 2],
     name="survey",
 )
-result = atlas.search(
+result = maps.search(
     [data],
     [Geometry(t0=2459000.0, u0=0.08, tE=24.0)],
     config=SearchConfig(candidate_count=300),
@@ -20,4 +20,3 @@ result = atlas.search(
 
 for seed in result.candidates[:10]:
     print(seed)
-

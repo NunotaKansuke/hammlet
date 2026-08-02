@@ -7,7 +7,7 @@
 equivalent. Axes must be strictly increasing; the stable map ID order is
 `s -> q -> rho`.
 
-## AtlasConfig
+## MapConfig
 
 Important defaults:
 
@@ -24,23 +24,23 @@ Important defaults:
 
 The power-of-two angular limits are validated by the numerical core.
 
-## build_atlas
+## build_maps
 
 ```python
-build_atlas(path, grid, config=AtlasConfig(), partition=Partition())
+build_maps(path, grid, config=MapConfig(), partition=Partition())
 ```
 
 The function requires the optional VBMicrolensing dependency. An existing
 destination is never overwritten. Failed builds remove only their own private
 partial directory.
 
-## Atlas
+## Maps
 
-`Atlas.open(path)` memory-maps the stored arrays. Useful members are
+`Maps.open(path)` memory-maps the stored arrays. Useful members are
 `map_ids`, `parameters`, `radial_nodes`, and `m_max`.
 
 ```python
-A = atlas.magnification(map_id, x, y, m_max=96)
+A = maps.magnification(map_id, x, y, m_max=96)
 ```
 
 reconstructs at arbitrary Cartesian points. Coordinates must lie inside the
@@ -52,10 +52,10 @@ stored radial range.
 `Geometry(t0, u0, tE)` specifies a rectilinear trajectory seed; angles are
 radians and `tE` must be positive.
 
-## SearchConfig and Atlas.search
+## SearchConfig and Maps.search
 
 ```python
-result = atlas.search(datasets, geometries, config=SearchConfig())
+result = maps.search(datasets, geometries, config=SearchConfig())
 ```
 
 The default two-pass scan uses `M=32, N_alpha=128` globally and

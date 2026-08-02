@@ -1,6 +1,6 @@
 # Hammlet
 
-Hammlet builds reusable Fourier atlases for binary-microlensing magnification
+Hammlet builds reusable Fourier maps for binary-microlensing magnification
 patterns and searches them rapidly over `(s, q, rho, alpha)`. It computes the
 angular coefficients directly with
 [VBMicrolensing](https://github.com/valboz/VBMicrolensing), without first
@@ -17,23 +17,23 @@ cd hammlet
 python -m pip install ".[all]"
 ```
 
-For generation only, install `.[generate]`; for searching an existing atlas,
+For generation only, install `.[generate]`; for searching existing maps,
 install `.[search]`.
 
 ## Build a map in a few lines
 
 ```python
-from hammlet import AtlasConfig, ParameterGrid, build_atlas
+from hammlet import MapConfig, ParameterGrid, build_maps
 
 grid = ParameterGrid(
     s=(0.8, 1.0, 1.2),
     q=(1e-4, 3e-4, 1e-3),
     rho=(3e-4, 1e-3),
 )
-build_atlas("atlas", grid, config=AtlasConfig())
+build_maps("maps", grid, config=MapConfig())
 ```
 
-`AtlasConfig()` uses the production defaults `M=384`, 256 radial nodes, and
+`MapConfig()` uses the production defaults `M=384`, 256 radial nodes, and
 adaptive angular sampling up to 8192 points near caustics. All accuracy/work
 parameters can be overridden explicitly.
 
@@ -47,17 +47,17 @@ grid = ParameterGrid.from_log10(
 )
 ```
 
-## Search the generated atlas
+## Search the generated maps
 
 ```python
 import numpy as np
-from hammlet import Atlas, Dataset, Geometry
+from hammlet import Maps, Dataset, Geometry
 
 data = np.loadtxt("lightcurve.dat")  # columns: time, flux, flux_error
 dataset = Dataset(time=data[:, 0], flux=data[:, 1], error=data[:, 2])
 
-atlas = Atlas.open("atlas")
-result = atlas.search(
+maps = Maps.open("maps")
+result = maps.search(
     [dataset],
     [Geometry(t0=2459000.0, u0=0.08, tE=24.0)],
 )
@@ -87,14 +87,14 @@ Split the ordered table into, for example, 32 contiguous jobs. Every machine
 uses the same JSON file and output filesystem:
 
 ```bash
-hammlet build examples/distributed_build.json /shared/hammlet-atlas \
+hammlet build-maps examples/distributed_build.json /shared/hammlet-maps \
   --part-index 0 --part-count 32
 ```
 
 Submit the same command with indices `0..31`, then merge once:
 
 ```bash
-hammlet merge /shared/hammlet-atlas
+hammlet merge-maps /shared/hammlet-maps
 ```
 
 Completed parts are immutable. A job writes privately and becomes visible only
@@ -111,17 +111,17 @@ Run:
 python examples/build_and_plot.py
 ```
 
-It directly evaluates one planetary binary lens, builds a compact example
-atlas, reconstructs the Fourier map on a Cartesian grid, and writes the image
-below.
+It builds a resonant-caustic map, independently evaluates a Cartesian reference
+with VBMicrolensing, and compares that reference with the Fourier reconstruction
+and its signed residual.
 
-![Reconstructed planetary magnification map](assets/example_magnification_map.png)
+![Direct VBM, Fourier reconstruction, residual, and coefficients](assets/vbm_fourier_residual.png)
 
 ## Documentation
 
 - [Mathematical method and algorithms](docs/theory.md)
 - [Python API and configuration](docs/api.md)
-- [Distributed generation and atlas format](docs/distributed-generation.md)
+- [Distributed generation and maps format](docs/distributed-generation.md)
 - [Accuracy certificates and limitations](docs/accuracy.md)
 - [Development and tests](docs/development.md)
 
@@ -132,7 +132,7 @@ below.
 - Complex64 storage rounding is included in that angular envelope.
 - The current release does **not** yet certify VBM variation between adjacent
   radial nodes, nor VBMicrolensing's own internal numerical error. Therefore,
-  the reported chi-square interval is conditional on the atlas node envelopes;
+  the reported chi-square interval is conditional on the map-node envelopes;
   it is not a formal interval enclosure of continuous direct VBM everywhere.
 - Always re-evaluate retained seeds with direct VBMicrolensing before scientific
   inference.
@@ -141,4 +141,3 @@ below.
 
 MIT. Please also respect the license and citation requirements of
 VBMicrolensing and JAX.
-

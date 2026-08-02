@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-from hammlet import Atlas, Dataset, Geometry, SearchConfig
+from hammlet import Dataset, Geometry, Maps, SearchConfig
 from hammlet._core.atlas_builder import MapBuildSpec, PolarAtlasBuilder
 
 
@@ -18,7 +18,7 @@ class ToyEvaluator:
         )
 
 
-def toy_atlas(path):
+def toy_maps(path):
     nodes = np.linspace(0.0, 1.5, 24)
     builder = PolarAtlasBuilder(
         nodes, n_phi_build=32, m_max=3, core_m_max=1, shard_size=2
@@ -28,27 +28,27 @@ def toy_atlas(path):
         for i in range(3)
     ]
     builder.build(path, specs)
-    return Atlas.open(path)
+    return Maps.open(path)
 
 
 def test_reconstructs_cartesian_magnification(tmp_path):
-    atlas = toy_atlas(tmp_path / "atlas")
+    maps = toy_maps(tmp_path / "maps")
     x = np.asarray([0.2, 0.5])
     y = np.asarray([0.1, -0.2])
-    actual = atlas.magnification(1, x, y, m_max=3)
+    actual = maps.magnification(1, x, y, m_max=3)
     expected = ToyEvaluator(0.3).magnification(x, y)
     np.testing.assert_allclose(actual, expected, rtol=5e-3, atol=5e-3)
 
 
 def test_end_to_end_search_returns_physical_parameters(tmp_path):
-    atlas = toy_atlas(tmp_path / "atlas")
+    maps = toy_maps(tmp_path / "maps")
     time = np.linspace(-1.0, 1.0, 60)
     geometry = Geometry(t0=0.0, u0=0.2, tE=1.0)
     tau = time
     x, y = -tau, np.full_like(tau, -0.2)
     flux = 1.7 * ToyEvaluator(0.3).magnification(x, y) + 0.4
     dataset = Dataset(time, flux, np.full_like(time, 0.01))
-    result = atlas.search(
+    result = maps.search(
         [dataset],
         [geometry],
         config=SearchConfig(

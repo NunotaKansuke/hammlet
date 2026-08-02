@@ -1,4 +1,4 @@
-"""High-level, memory-mapped atlas interface."""
+"""High-level, memory-mapped map collection."""
 
 from __future__ import annotations
 
@@ -10,13 +10,13 @@ from ._core.atlas import PolarAtlas
 from ._core.radial import interpolate_coefficients
 
 
-class Atlas:
+class Maps:
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path).resolve()
         self._core = PolarAtlas(self.path)
 
     @classmethod
-    def open(cls, path: str | Path) -> "Atlas":
+    def open(cls, path: str | Path) -> "Maps":
         return cls(path)
 
     @property
@@ -65,4 +65,3 @@ class Atlas:
         from .search import search
 
         return search(self, datasets, geometries, config=config)
-

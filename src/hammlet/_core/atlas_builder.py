@@ -193,7 +193,7 @@ class PolarAtlasBuilder:
         np.save(output / "map_ids.npy", np.asarray(all_map_ids, dtype=np.int64))
         np.save(output / "map_parameters.npy", np.asarray(all_parameters, dtype=np.float64))
         manifest = {
-            "format": "hammlet-fourier-atlas",
+            "format": "hammlet-fourier-maps",
             "version": 1,
             "n_maps": len(all_map_ids),
             "n_r": self.radial_nodes.size,

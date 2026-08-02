@@ -2,7 +2,7 @@ import json
 
 import numpy as np
 
-from hammlet import Atlas, merge_parts
+from hammlet import Maps, merge_maps
 from hammlet._core.atlas_builder import MapBuildSpec, PolarAtlasBuilder
 
 
@@ -48,8 +48,7 @@ def write_part(root, index, map_ids):
 def test_merge_validates_and_preserves_global_ids(tmp_path):
     write_part(tmp_path, 0, [0, 1])
     write_part(tmp_path, 1, [2])
-    destination = merge_parts(tmp_path)
-    atlas = Atlas.open(destination)
-    np.testing.assert_array_equal(atlas.map_ids, [0, 1, 2])
-    assert atlas._core.parameters_for(2)[0] == 0.2
-
+    destination = merge_maps(tmp_path)
+    maps = Maps.open(destination)
+    np.testing.assert_array_equal(maps.map_ids, [0, 1, 2])
+    assert maps._core.parameters_for(2)[0] == 0.2

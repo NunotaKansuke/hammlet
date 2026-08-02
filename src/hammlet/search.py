@@ -7,7 +7,7 @@ from typing import Sequence
 
 import numpy as np
 
-from .atlas import Atlas
+from .maps import Maps
 from .config import SearchConfig
 from ._core.config import PSPLGeometry
 from ._core.jax_backend import JAXConsistentGeometryBatchScanner
@@ -55,7 +55,7 @@ def _kernels(datasets, geometries, nodes, m_max, radial_order):
 
 
 def search(
-    atlas: Atlas,
+    maps: Maps,
     datasets: Sequence[Dataset],
     geometries: Sequence[Geometry],
     *,
@@ -66,9 +66,9 @@ def search(
     datasets, geometries = tuple(datasets), tuple(geometries)
     if not datasets or not geometries:
         raise ValueError("at least one dataset and one geometry are required")
-    if config.full_m_max > atlas.m_max:
-        raise ValueError("full_m_max exceeds the modes stored in this atlas")
-    nodes = atlas.radial_nodes
+    if config.full_m_max > maps.m_max:
+        raise ValueError("full_m_max exceeds the modes stored in these maps")
+    nodes = maps.radial_nodes
     base = JAXConsistentGeometryBatchScanner(
         _kernels(datasets, geometries, nodes, config.base_m_max, config.radial_order),
         n_alpha=config.base_n_alpha,
@@ -78,7 +78,7 @@ def search(
         n_alpha=config.full_n_alpha,
     )
     raw = scan_atlas_multiresolution(
-        atlas._core,
+        maps._core,
         base,
         full,
         base_m_max=config.base_m_max,
@@ -115,4 +115,3 @@ def search(
         maps_scanned=len(raw.map_ids),
         maps_rescanned=int(np.sum(raw.rescanned)),
     )
-

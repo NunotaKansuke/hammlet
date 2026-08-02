@@ -87,8 +87,8 @@ def default_radial_nodes(n: int = 256, maximum: float = 3.5) -> np.ndarray:
 
 
 @dataclass(frozen=True)
-class AtlasConfig:
-    """Production defaults for direct, adaptive VBM Fourier generation."""
+class MapConfig:
+    """Production defaults for direct, adaptive VBM map generation."""
 
     m_max: int = 384
     core_m_max: int = 96
@@ -123,4 +123,3 @@ class SearchConfig:
     radial_order: int = 1
     certified_selection: bool = True
     shards_per_call: int = 4
-
