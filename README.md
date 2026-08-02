@@ -12,7 +12,7 @@ physical fit. It is not a replacement for the final direct-VBM optimization.
 ## Install
 
 ```bash
-git clone https://github.com/NunotaKansuke/hammlet.git hammlet
+git clone https://github.com/NunotaKansuke/hammlet.git
 cd hammlet
 python -m pip install ".[all]"
 ```
