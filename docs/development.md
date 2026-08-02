@@ -22,3 +22,5 @@ compile time separately from steady-state scan time. Any new error claim must
 state its reference function and whether radial interpolation and VBM internal
 tolerances are enclosed.
 
+The required strata, phase boundaries, metadata, and acceptance gate are defined
+in [the numerical validation plan](validation-plan.md).

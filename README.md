@@ -131,6 +131,7 @@ and its signed residual.
 - [Python API and configuration](docs/api.md)
 - [Distributed generation and maps format](docs/distributed-generation.md)
 - [Accuracy certificates and limitations](docs/accuracy.md)
+- [Numerical validation plan](docs/validation-plan.md)
 - [Development and tests](docs/development.md)
 
 ## Scope and important limitations
