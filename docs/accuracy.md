@@ -31,6 +31,39 @@ plus the nested-grid coefficient-change envelope and outward-rounded complex64
 storage error. Therefore $|f(\phi)-P_M(\phi)| \le E_M$ for every angle, relative to
 the declared sampled reference.
 
+## Radial certificate
+
+Let $r_j$ be the stored radial nodes and let $\hat r_k$ contain both those nodes
+and the configured dyadic direct-VBM holdout rings. At each $\hat r_k$, the
+angular construction supplies coefficients $d_m(\hat r_k)$ and a certified
+angular remainder $e_k$. Between adjacent reference rings, Hammlet defines
+$d_m(r)$ by linear interpolation.
+
+The runtime coefficient $p_m(r)$ is the fixed linear or cubic Lagrange
+interpolant through the stored complex64 coefficients. On one reference segment
+$I=[a,a+h]$, the residual $g_m=d_m-p_m$ obeys $g_m''=-p_m''$. Consequently,
+
+$$
+\max_I |g_m|
+\le
+\max\!\left(|g_m(a)|,|g_m(a+h)|\right)
++\frac{h^2}{8}\max_I|p_m''|.
+$$
+
+For cubic interpolation, $p_m''$ is linear, so its absolute maximum is bounded
+by its two endpoint values. For linear interpolation the derivative term is
+zero. Summing the coefficient bounds with Fourier weights gives
+
+$$
+R_I=B_{I,0}+2\sum_{m=1}^{M}B_{I,m}+\max(e_a,e_{a+h}).
+$$
+
+Every node read by the interval's runtime stencil receives at least $R_I$.
+Because Lagrange weights sum to one, their absolute values sum to at least one;
+the existing absolute-stencil propagation therefore encloses the complete
+radial interval, including negative cubic weights. The stored node envelope is
+the maximum needed by either the linear ranking pass or cubic full pass.
+
 ## Propagation to chi-square
 
 Radial interpolation propagates node errors with absolute stencil weights. The
@@ -50,20 +83,21 @@ scan time.
 
 ## What is and is not guaranteed
 
-The current guarantee is conditional and angular:
+The current guarantee is conditional on a sampled two-dimensional reference:
 
-- **Included:** every angle of the periodic piecewise-linear VBM sample
-  reference, retained diagnostic tail, nested coefficient change, and
-  complex64 storage rounding.
-- **Not yet included:** unknown VBM variation between adjacent radial nodes.
+- **Included:** every angle and radius of the declared angular/radial
+  piecewise-linear VBM sample reference, retained diagnostic tail, nested
+  coefficient change, radial Lagrange interpolation, and complex64 storage
+  rounding.
+- **Not included:** unknown VBM variation between adjacent radial holdout rings.
 - **Not included:** a formal interval bound on VBMicrolensing's own internal
   finite-source numerical integration error.
 
 Thus the interval is useful and mathematically constructed, but must not be
 described as a proof against continuous direct VBM at every $(r,\phi)$. A future
-two-dimensional certificate needs adaptive radial midpoint/holdout rings or a
-valid radial derivative enclosure. Scientific finalists must be directly
-evaluated with VBMicrolensing.
+continuous-VBM certificate still needs a valid radial derivative enclosure from
+the underlying solver. Scientific finalists must be directly evaluated with
+VBMicrolensing.
 
 ## Choosing M
 

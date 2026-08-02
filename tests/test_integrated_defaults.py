@@ -9,6 +9,7 @@ def test_production_defaults_keep_high_modes_and_use_cubic_full_pass():
     search = SearchConfig()
     assert maps.m_max == 512
     assert maps.core_m_max == 128
+    assert maps.radial_certificate_levels == 1
     assert search.full_m_max == 128
     assert search.handoff_m_max == 512
     assert search.refine_deep_levels == 10

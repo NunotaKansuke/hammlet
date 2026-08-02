@@ -59,12 +59,16 @@ maps/
       x_coeff_extension.npy
       certified_error.npy
       certified_error_full.npy
+    direct_diagnostics.npz
 ```
 
 Core and extension mode files allow a low-mode pass to avoid reading production
 high modes. Coefficients are complex64 by default and arrays are NumPy `.npy`
 files so they can be memory-mapped. `manifest.json` records normalization,
 mode budgets, builder settings, certificate semantics, and shard membership.
+The certified-error arrays already combine angular reconstruction, radial
+holdout interpolation, and storage rounding; search does not read a separate
+radial-error tensor.
 
 `hammlet-build.json` records the physical grid, generation config, partition,
 and selected global map IDs. Merge validates these records before copying

@@ -86,9 +86,16 @@ radius. Hammlet addresses this in two complementary places:
 2. Angular sampling is driven by retained-coefficient convergence and caustic
    proximity, not by a single fixed $N_\phi$. A caustic-guarded outer ring can
    therefore use the same fine angular work limit as an inner ring.
+3. Every final radial interval receives nested direct-evaluator holdout rings.
+   Their spectra define a denser piecewise-linear radial reference. A
+   polynomial remainder bound certifies both the linear and cubic runtime
+   interpolants against that reference and folds the result into the stored
+   node-error envelope.
 
-The per-ring generation cost remains bounded by `max_n_phi`; this is an accuracy/work policy,
-not a proof that every continuous radial feature is resolved. See
+The per-ring generation cost remains bounded by `max_n_phi`. Radial holdouts
+increase one-time generation work but add no search-time contraction. This is
+an accuracy/work policy, not a proof that every continuous radial feature
+between unevaluated holdout rings is resolved. See
 [accuracy.md](accuracy.md).
 
 ## 4. Trajectory contraction

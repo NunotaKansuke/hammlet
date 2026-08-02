@@ -19,7 +19,11 @@ import numpy as np
 
 from .atlas_builder import PolarAtlasBuilder
 from .caustics import adamgrid_map_origin_shift, caustics_to_adamgrid_map_frame
-from .certification import certify_sampled_ring
+from .certification import (
+    certify_sampled_ring,
+    radial_interval_to_node_envelope,
+    radial_piecewise_linear_residual_bound,
+)
 from .map_adapter import point_lens_magnification
 
 
@@ -56,6 +60,7 @@ class DirectSpectrumConfig:
     caustic_local_levels: int = 8
     caustic_points_per_side: int = 4
     diagnostic_m_max: int = 768
+    radial_certificate_levels: int = 1
 
     def __post_init__(self) -> None:
         for name in ("m_max", "core_m_max", "diagnostic_m_max"):
@@ -82,10 +87,16 @@ class DirectSpectrumConfig:
             value = float(getattr(self, name))
             if not np.isfinite(value) or value <= 0.0:
                 raise ValueError(f"{name} must be finite and positive")
-        for name in ("caustic_local_levels", "caustic_points_per_side"):
+        for name in (
+            "caustic_local_levels",
+            "caustic_points_per_side",
+            "radial_certificate_levels",
+        ):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, Integral) or value < 1:
                 raise ValueError(f"{name} must be a positive integer")
+        if self.radial_certificate_levels > 3:
+            raise ValueError("radial_certificate_levels cannot exceed three")
 
 
 @dataclass(frozen=True)
@@ -585,6 +596,37 @@ class DirectVBMPolarAtlasBuilder(PolarAtlasBuilder):
         self.spectrum_config = spectrum_config
         self._map_diagnostics: list[dict[str, object]] = []
 
+    def _radial_holdout_radii(self) -> np.ndarray:
+        subdivisions = 2**self.spectrum_config.radial_certificate_levels
+        fractions = np.arange(1, subdivisions, dtype=np.float64) / subdivisions
+        left = self.radial_nodes[:-1, None]
+        width = np.diff(self.radial_nodes)[:, None]
+        return (left + width * fractions[None, :]).ravel()
+
+    def _combined_radial_certificate(
+        self,
+        stored_coefficients: np.ndarray,
+        reference_radii: np.ndarray,
+        reference_coefficients: np.ndarray,
+        reference_error: np.ndarray,
+    ) -> tuple[np.ndarray, dict[int, np.ndarray]]:
+        by_order: dict[int, np.ndarray] = {}
+        for order in (1, 3):
+            if len(self.radial_nodes) < order + 1:
+                continue
+            interval_bound = radial_piecewise_linear_residual_bound(
+                self.radial_nodes,
+                stored_coefficients,
+                reference_radii,
+                reference_coefficients,
+                reference_error,
+                order=order,
+            )
+            by_order[order] = radial_interval_to_node_envelope(
+                interval_bound, order=order
+            )
+        return np.maximum.reduce(list(by_order.values())), by_order
+
     def sample(self, evaluator: RingMagnificationEvaluator) -> dict[str, np.ndarray]:
         radial_guard = np.empty_like(self.radial_nodes)
         radial_guard[0] = 0.5 * (self.radial_nodes[1] - self.radial_nodes[0])
@@ -601,13 +643,50 @@ class DirectVBMPolarAtlasBuilder(PolarAtlasBuilder):
         ]
         exact_x = np.stack([item.x_coeff for item in rings])
         stored_x = exact_x.astype(self.coefficient_dtype)
-        rounding_delta = stored_x.astype(np.complex128) - exact_x
-        rounding_error = np.abs(rounding_delta[:, 0]) + 2.0 * np.sum(
-            np.abs(rounding_delta[:, 1:]), axis=1
+        holdout_radii = self._radial_holdout_radii()
+        holdout_width = np.repeat(
+            np.diff(self.radial_nodes)
+            / (2**self.spectrum_config.radial_certificate_levels),
+            2**self.spectrum_config.radial_certificate_levels - 1,
         )
-        core_delta = rounding_delta[:, : self.spectrum_config.core_m_max + 1]
-        core_rounding_error = np.abs(core_delta[:, 0]) + 2.0 * np.sum(
-            np.abs(core_delta[:, 1:]), axis=1
+        holdout_rings = [
+            adaptive_ring_spectrum(
+                evaluator,
+                radius,
+                self.spectrum_config,
+                radial_guard_distance=0.5 * float(holdout_width[index]),
+            )
+            for index, radius in enumerate(holdout_radii)
+        ]
+        holdout_x = np.stack([item.x_coeff for item in holdout_rings])
+        combined_radii = np.concatenate((self.radial_nodes, holdout_radii))
+        order = np.argsort(combined_radii, kind="stable")
+        reference_radii = combined_radii[order]
+        reference_x = np.concatenate((exact_x, holdout_x), axis=0)[order]
+        full_reference_error = np.concatenate(
+            (
+                np.asarray([item.certified_error for item in rings]),
+                np.asarray([item.certified_error for item in holdout_rings]),
+            )
+        )[order]
+        core_reference_error = np.concatenate(
+            (
+                np.asarray([item.certified_error_core for item in rings]),
+                np.asarray([item.certified_error_core for item in holdout_rings]),
+            )
+        )[order]
+        full_certificate, full_by_order = self._combined_radial_certificate(
+            stored_x.astype(np.complex128),
+            reference_radii,
+            reference_x,
+            full_reference_error,
+        )
+        core_modes = self.spectrum_config.core_m_max + 1
+        core_certificate, core_by_order = self._combined_radial_certificate(
+            stored_x[:, :core_modes].astype(np.complex128),
+            reference_radii,
+            reference_x[:, :core_modes],
+            core_reference_error,
         )
         self._map_diagnostics.append(
             {
@@ -643,6 +722,19 @@ class DirectVBMPolarAtlasBuilder(PolarAtlasBuilder):
                     [item.certificate_unresolved_error for item in rings],
                     dtype=np.float64,
                 ),
+                "radial_certificate_order1": full_by_order[1],
+                "radial_certificate_core_order1": core_by_order[1],
+                "radial_certificate_order3": full_by_order.get(
+                    3, full_by_order[1]
+                ),
+                "radial_certificate_core_order3": core_by_order.get(
+                    3, core_by_order[1]
+                ),
+                "radial_certificate": full_certificate,
+                "radial_certificate_core": core_certificate,
+                "radial_holdout_evaluations": np.asarray(
+                    sum(item.evaluations for item in holdout_rings), dtype=np.int64
+                ),
             }
         )
         return {
@@ -656,14 +748,8 @@ class DirectVBMPolarAtlasBuilder(PolarAtlasBuilder):
             "reconstruction_error_core": np.asarray(
                 [item.reconstruction_error_core for item in rings], dtype=np.float32
             ),
-            "certified_error": _upper_float32(
-                np.asarray([item.certified_error for item in rings])
-                + rounding_error
-            ),
-            "certified_error_core": _upper_float32(
-                np.asarray([item.certified_error_core for item in rings])
-                + core_rounding_error
-            ),
+            "certified_error": _upper_float32(full_certificate),
+            "certified_error_core": _upper_float32(core_certificate),
             "deviation_envelope": np.asarray(
                 [item.deviation_envelope for item in rings],
                 dtype=np.float32,
@@ -679,14 +765,26 @@ class DirectVBMPolarAtlasBuilder(PolarAtlasBuilder):
             for name in self._map_diagnostics[0]
         }
         np.savez_compressed(output / "direct_diagnostics.npz", **diagnostics)
-        manifest["builder"] = "direct-vbm-adaptive-fourier"
+        manifest["builder"] = "direct-vbm-adaptive-radial-fourier"
+        manifest["error_certificate"] = (
+            "piecewise-linear-vbm-angular-and-radial-reference"
+        )
         manifest["direct_spectrum_config"] = asdict(self.spectrum_config)
+        stored_evaluations = int(np.sum(diagnostics["evaluations"]))
+        holdout_evaluations = int(
+            np.sum(diagnostics["radial_holdout_evaluations"])
+        )
         manifest["direct_diagnostics"] = {
-            "total_vbm_evaluations": int(np.sum(diagnostics["evaluations"])),
+            "total_vbm_evaluations": stored_evaluations + holdout_evaluations,
+            "stored_ring_vbm_evaluations": stored_evaluations,
             "unconverged_rings": int(np.sum(~diagnostics["converged"])),
             "caustic_guarded_rings": int(np.sum(diagnostics["caustic_guarded"])),
             "max_normalized_coefficient_error": float(
                 np.max(diagnostics["normalized_coefficient_error"])
+            ),
+            "radial_holdout_evaluations": holdout_evaluations,
+            "max_radial_certificate": float(
+                np.max(diagnostics["radial_certificate"])
             ),
             "per_ring_diagnostics": "direct_diagnostics.npz",
         }

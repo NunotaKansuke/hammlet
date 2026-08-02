@@ -12,6 +12,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from .radial import validate_radial_order
+
 
 def fourier_series_tail_bound(
     coefficients: np.ndarray, retained_m_max: int
@@ -152,9 +154,176 @@ def certify_sampled_ring(
     )
 
 
+def _radial_stencil_indices(cell: int, n_node: int, order: int) -> np.ndarray:
+    """Return the fixed Lagrange stencil used inside one radial cell."""
+    order = validate_radial_order(order)
+    if not 0 <= cell < n_node - 1:
+        raise ValueError("cell is outside the radial-node range")
+    if order == 1:
+        return np.asarray((cell, cell + 1), dtype=np.int64)
+    start = int(np.clip(cell - 1, 0, n_node - 4))
+    return start + np.arange(4, dtype=np.int64)
+
+
+def _lagrange_weights(nodes: np.ndarray, x: float) -> np.ndarray:
+    weights = np.ones(len(nodes), dtype=np.float64)
+    for target in range(len(nodes)):
+        for other in range(len(nodes)):
+            if other != target:
+                weights[target] *= (x - nodes[other]) / (
+                    nodes[target] - nodes[other]
+                )
+    return weights
+
+
+def _lagrange_second_derivative_weights(
+    nodes: np.ndarray, x: float
+) -> np.ndarray:
+    """Evaluate the second derivative of every Lagrange basis polynomial."""
+    output = np.zeros(len(nodes), dtype=np.float64)
+    if len(nodes) <= 2:
+        return output
+    for target in range(len(nodes)):
+        other = np.delete(nodes, target)
+        denominator = float(np.prod(nodes[target] - other))
+        polynomial = np.poly(other) / denominator
+        output[target] = float(np.polyval(np.polyder(polynomial, 2), x))
+    return output
+
+
+def radial_piecewise_linear_residual_bound(
+    stored_nodes: np.ndarray,
+    stored_coefficients: np.ndarray,
+    reference_nodes: np.ndarray,
+    reference_coefficients: np.ndarray,
+    reference_error: np.ndarray,
+    *,
+    order: int,
+) -> np.ndarray:
+    """Bound radial interpolation against a sampled piecewise-linear reference.
+
+    ``reference_nodes`` must include every stored node and may add nested direct
+    VBM holdout rings. Between consecutive reference rings the declared
+    coefficient reference is linear. The runtime Lagrange interpolant is a
+    polynomial, so on each subinterval its residual is bounded by its endpoint
+    residual plus ``h**2/8`` times a computable second-derivative bound. The
+    returned value is one angular-series L-infinity envelope per stored cell.
+
+    ``reference_error`` is the angular certificate at each reference ring. It
+    is interpolated convexly between rings and therefore enters through the
+    larger endpoint value.
+    """
+    nodes = np.asarray(stored_nodes, dtype=np.float64)
+    stored = np.asarray(stored_coefficients, dtype=np.complex128)
+    radii = np.asarray(reference_nodes, dtype=np.float64)
+    reference = np.asarray(reference_coefficients, dtype=np.complex128)
+    angular_error = np.asarray(reference_error, dtype=np.float64)
+    order = validate_radial_order(order)
+    if nodes.ndim != 1 or len(nodes) < order + 1 or np.any(np.diff(nodes) <= 0.0):
+        raise ValueError("stored_nodes must be strictly increasing and wide enough")
+    if stored.ndim != 2 or stored.shape[0] != len(nodes):
+        raise ValueError("stored_coefficients must have shape (stored_node, mode)")
+    if (
+        radii.ndim != 1
+        or len(radii) < len(nodes)
+        or np.any(np.diff(radii) <= 0.0)
+        or reference.shape != (len(radii), stored.shape[1])
+        or angular_error.shape != (len(radii),)
+    ):
+        raise ValueError("reference arrays have incompatible shapes")
+    if (
+        not np.all(np.isfinite(radii))
+        or not np.all(np.isfinite(reference))
+        or not np.all(np.isfinite(angular_error))
+        or np.any(angular_error < 0.0)
+    ):
+        raise ValueError("reference arrays must be finite with non-negative errors")
+    scale = max(1.0, abs(float(nodes[0])), abs(float(nodes[-1])))
+    tolerance = 64.0 * np.finfo(np.float64).eps * scale
+    if abs(radii[0] - nodes[0]) > tolerance or abs(radii[-1] - nodes[-1]) > tolerance:
+        raise ValueError("reference_nodes must share the stored radial endpoints")
+    stored_positions = np.searchsorted(radii, nodes)
+    if np.any(stored_positions >= len(radii)) or not np.allclose(
+        radii[stored_positions], nodes, rtol=0.0, atol=tolerance
+    ):
+        raise ValueError("reference_nodes must include every stored node")
+
+    mode_weight = np.full(stored.shape[1], 2.0, dtype=np.float64)
+    mode_weight[0] = 1.0
+    output = np.zeros(len(nodes) - 1, dtype=np.float64)
+    for cell in range(len(output)):
+        left_position = int(stored_positions[cell])
+        right_position = int(stored_positions[cell + 1])
+        if right_position <= left_position:
+            raise RuntimeError("stored radial cell has no reference segment")
+        stencil_indices = _radial_stencil_indices(cell, len(nodes), order)
+        stencil_nodes = nodes[stencil_indices]
+        stencil_coefficients = stored[stencil_indices]
+        bound = 0.0
+        for segment in range(left_position, right_position):
+            left = float(radii[segment])
+            right = float(radii[segment + 1])
+            left_value = _lagrange_weights(stencil_nodes, left) @ stencil_coefficients
+            right_value = (
+                _lagrange_weights(stencil_nodes, right) @ stencil_coefficients
+            )
+            endpoint = np.maximum(
+                np.abs(reference[segment] - left_value),
+                np.abs(reference[segment + 1] - right_value),
+            )
+            if order == 3:
+                second_left = (
+                    _lagrange_second_derivative_weights(stencil_nodes, left)
+                    @ stencil_coefficients
+                )
+                second_right = (
+                    _lagrange_second_derivative_weights(stencil_nodes, right)
+                    @ stencil_coefficients
+                )
+                second = np.maximum(np.abs(second_left), np.abs(second_right))
+                endpoint = endpoint + (right - left) ** 2 * second / 8.0
+            coefficient_bound = float(np.dot(mode_weight, endpoint))
+            local = coefficient_bound + max(
+                float(angular_error[segment]),
+                float(angular_error[segment + 1]),
+            )
+            bound = max(bound, local)
+        output[cell] = bound
+    return output
+
+
+def radial_interval_to_node_envelope(
+    interval_bound: np.ndarray, *, order: int
+) -> np.ndarray:
+    """Encode interval bounds as node errors for the existing fast propagator.
+
+    Every node read by an interval's runtime stencil receives at least that
+    interval's bound. Since Lagrange weights sum to one, the absolute-weight
+    propagation is then no smaller than the interval bound, including for
+    cubic stencils with negative weights.
+    """
+    intervals = np.asarray(interval_bound, dtype=np.float64)
+    order = validate_radial_order(order)
+    if (
+        intervals.ndim != 1
+        or intervals.size < order
+        or not np.all(np.isfinite(intervals))
+        or np.any(intervals < 0.0)
+    ):
+        raise ValueError("interval_bound must be a finite non-negative vector")
+    n_node = len(intervals) + 1
+    output = np.zeros(n_node, dtype=np.float64)
+    for cell, value in enumerate(intervals):
+        indices = _radial_stencil_indices(cell, n_node, order)
+        output[indices] = np.maximum(output[indices], value)
+    return output
+
+
 __all__ = [
     "NestedFourierCertificate",
     "certify_sampled_ring",
     "fourier_series_tail_bound",
     "periodic_piecewise_linear_residual_bound",
+    "radial_interval_to_node_envelope",
+    "radial_piecewise_linear_residual_bound",
 ]

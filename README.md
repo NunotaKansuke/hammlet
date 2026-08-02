@@ -36,7 +36,9 @@ build_maps("maps", grid, config=MapConfig())
 `MapConfig()` stores through `M=512`. Maps are grouped into `(s,q)` buckets;
 each bucket uses the complete rho axis to place 256 radial nodes around measured
 spectral difficulty. Angular sampling independently adapts up to 8192 points
-near caustics. Search reads only the modes needed by each stage.
+near caustics. Every radial interval also receives direct-evaluator holdout
+rings used by the stored error certificate. Search reads only the modes needed
+by each stage.
 
 The same API accepts logarithmic axes without manual exponentiation:
 
@@ -136,13 +138,14 @@ and its signed residual.
 
 ## Scope and important limitations
 
-- The stored angular certificate is deterministic relative to the periodic
-  piecewise-linear interpolant through the adaptive VBM angular samples.
-- Complex64 storage rounding is included in that angular envelope.
-- The current release does **not** yet certify VBM variation between adjacent
-  radial nodes, nor VBMicrolensing's own internal numerical error. Therefore,
-  the reported chi-square interval is conditional on the map-node envelopes;
-  it is not a formal interval enclosure of continuous direct VBM everywhere.
+- The stored certificate is deterministic relative to the two-dimensional
+  piecewise-linear reference through adaptive angular samples and nested radial
+  holdout rings.
+- Angular truncation, radial interpolation, and complex64 storage rounding are
+  propagated into the FFT-stage chi-square interval.
+- VBMicrolensing variation between unevaluated holdout rings and its own
+  internal numerical error are not analytically enclosed. Therefore, the
+  interval is not a formal enclosure of continuous direct VBM everywhere.
 - Always re-evaluate retained seeds with direct VBMicrolensing before scientific
   inference.
 

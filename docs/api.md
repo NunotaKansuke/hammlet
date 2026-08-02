@@ -25,8 +25,13 @@ Important defaults:
 | `radial_q_buckets` | 4 | number of radial-layout groups across q |
 | `radial_pilot_maps` | 8 | sharp-rho pilot maps per bucket |
 | `radial_adaptive_fraction` | 0.65 | radial nodes allocated by measured difficulty |
+| `radial_certificate_levels` | 1 | dyadic direct-VBM holdout level inside every radial interval |
 
 The power-of-two angular limits are validated by the numerical core.
+Level 1 adds each interval midpoint, approximately doubling ring generation.
+Levels 2 and 3 add all dyadic quarter or eighth points for stricter sampled
+references at correspondingly higher one-time generation cost. These levels do
+not add search-time arrays or contractions.
 
 ## build_maps
 

@@ -5,6 +5,7 @@ import json
 
 import numpy as np
 
+from hammlet import Dataset, Geometry, Maps, SearchConfig
 from hammlet._core.atlas import PolarAtlas
 from hammlet._core.atlas_builder import MapBuildSpec
 from hammlet._core.direct_vbm import (
@@ -12,6 +13,7 @@ from hammlet._core.direct_vbm import (
     DirectVBMPolarAtlasBuilder,
     adaptive_ring_spectrum,
 )
+from hammlet._core.reference import direct_alpha_scan
 
 
 @dataclass
@@ -46,6 +48,21 @@ class NarrowCausticRing:
         angle = np.arctan2(y, x)
         distance = np.angle(np.exp(1j * (angle - 0.37)))
         return 1.2 + 3.0 * np.exp(-0.5 * (distance / self.source_radius) ** 2)
+
+
+@dataclass
+class RadialRing:
+    source_radius: float = 0.01
+    caustic_components: tuple[np.ndarray, ...] = ()
+
+    def magnification(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        radius = np.hypot(x, y)
+        angle = np.arctan2(y, x)
+        return (
+            1.25
+            + 0.18 * radius**2
+            + 0.07 * np.sin(2.3 * radius) * np.cos(3.0 * angle)
+        )
 
 
 def _config(**updates) -> DirectSpectrumConfig:
@@ -123,11 +140,59 @@ def test_direct_builder_writes_compatible_atlas_and_provenance(tmp_path) -> None
 
     assert atlas.map_ids.tolist() == [7]
     assert atlas.m_max == 4
-    assert manifest["builder"] == "direct-vbm-adaptive-fourier"
+    assert manifest["builder"] == "direct-vbm-adaptive-radial-fourier"
     assert manifest["direct_diagnostics"]["unconverged_rings"] == 0
     assert manifest["error_certificate"] == (
-        "periodic-piecewise-linear-vbm-reference"
+        "piecewise-linear-vbm-angular-and-radial-reference"
     )
+    assert manifest["direct_diagnostics"]["radial_holdout_evaluations"] > 0
+    with np.load(output / "direct_diagnostics.npz") as diagnostics:
+        assert diagnostics["radial_certificate_order1"].shape == (1, 3)
+        assert diagnostics["radial_certificate_order3"].shape == (1, 3)
     shard = next(atlas.iter_shards(m_max=4))
     assert shard.certified_error is not None
     assert np.all(shard.certified_error >= shard.reconstruction_error)
+
+
+def test_radial_certificate_reaches_profiled_chi2_interval(tmp_path) -> None:
+    evaluator = RadialRing()
+    config = _config(m_max=4, core_m_max=2, diagnostic_m_max=8)
+    nodes = np.asarray([0.02, 0.16, 0.38, 0.7, 1.05, 1.4])
+    output = DirectVBMPolarAtlasBuilder(
+        nodes, spectrum_config=config, shard_size=1
+    ).build(
+        tmp_path / "radial-maps",
+        [MapBuildSpec(0, 0.0, -3.0, -2.0, evaluator)],
+    )
+    geometry = Geometry(t0=0.0, u0=0.12, tE=1.0)
+    time = np.linspace(-1.2, 1.2, 81)
+    alpha = 0.43
+    tau = time
+    x = geometry.u0 * np.sin(alpha) - tau * np.cos(alpha)
+    y = -geometry.u0 * np.cos(alpha) - tau * np.sin(alpha)
+    flux = 2.1 * evaluator.magnification(x, y) + 0.35
+    dataset = Dataset(time, flux, np.full_like(time, 0.01))
+    n_alpha = 16
+    result = Maps.open(output).search(
+        [dataset],
+        [geometry],
+        config=SearchConfig(
+            base_m_max=1,
+            full_m_max=4,
+            base_n_alpha=8,
+            full_n_alpha=n_alpha,
+            top_count=1,
+            risk_count=1,
+            candidate_count=1,
+            refine=False,
+        ),
+    )
+    direct = direct_alpha_scan(
+        evaluator,
+        [dataset],
+        geometry,
+        2.0 * np.pi * np.arange(n_alpha) / n_alpha,
+    )
+    candidate = result.candidates[0]
+
+    assert candidate.chi2_lower <= np.min(direct) <= candidate.chi2_upper

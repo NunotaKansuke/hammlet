@@ -113,6 +113,7 @@ class MapConfig:
     radial_pilot_phi: int = 64
     radial_pilot_m_max: int = 24
     radial_adaptive_fraction: float = 0.65
+    radial_certificate_levels: int = 1
 
     def __post_init__(self) -> None:
         positive_ints = (
@@ -130,6 +131,7 @@ class MapConfig:
             "radial_pilot_bins",
             "radial_pilot_phi",
             "radial_pilot_m_max",
+            "radial_certificate_levels",
         )
         if any(int(getattr(self, name)) < 1 for name in positive_ints):
             raise ValueError("map generation counts and mode budgets must be positive")
@@ -143,6 +145,8 @@ class MapConfig:
             raise ValueError("radial_pilot_phi is too small for radial_pilot_m_max")
         if self.radial_max <= 0.0:
             raise ValueError("radial_max must be positive")
+        if self.radial_certificate_levels > 3:
+            raise ValueError("radial_certificate_levels cannot exceed three")
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)

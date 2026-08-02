@@ -6,11 +6,12 @@ empirical comparison into a mathematical certificate.
 
 ## 1. Radial interpolation error
 
-The stored certificate currently encloses angular reconstruction and storage
-error at radial nodes. It does not enclose direct-VBM variation between nodes.
-The next certificate extension must evaluate deterministic radial holdouts in
-every interval, including caustic-adjacent intervals, and propagate the resulting
-envelope through the existing chi-square bounds.
+The stored certificate now evaluates deterministic dyadic radial holdouts in
+every interval and propagates the linear/cubic interpolation envelope through
+the existing chi-square bounds. Its declared reference is piecewise linear
+between evaluated rings. Validation must measure how well that sampled
+reference represents direct VBM between those rings; a fully continuous proof
+still requires a solver-supplied radial derivative enclosure.
 
 Report at least:
 
@@ -19,8 +20,8 @@ Report at least:
 - observed coverage of the resulting chi-square interval;
 - generation-time and search-time overhead separately.
 
-Until that extension exists, Hammlet must continue to describe its interval as
-conditional on the sampled radial representation.
+Hammlet must continue to describe its interval as conditional on the sampled
+radial representation.
 
 ## 2. Caustic and small-source recall
 

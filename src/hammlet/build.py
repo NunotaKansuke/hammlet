@@ -38,6 +38,7 @@ def _spectrum_config(config: MapConfig) -> DirectSpectrumConfig:
         caustic_local_levels=config.caustic_local_levels,
         caustic_points_per_side=config.caustic_points_per_side,
         diagnostic_m_max=config.diagnostic_m_max,
+        radial_certificate_levels=config.radial_certificate_levels,
     )
 
 
