@@ -1,0 +1,144 @@
+# Hammlet
+
+Hammlet builds reusable Fourier atlases for binary-microlensing magnification
+patterns and searches them rapidly over `(s, q, rho, alpha)`. It computes the
+angular coefficients directly with
+[VBMicrolensing](https://github.com/valboz/VBMicrolensing), without first
+materializing a large Cartesian AdaMGrid map.
+
+The package is intended to produce accurate **initial seeds** for a downstream
+physical fit. It is not a replacement for the final direct-VBM optimization.
+
+## Install
+
+```bash
+git clone <repository-url> hammlet
+cd hammlet
+python -m pip install ".[all]"
+```
+
+For generation only, install `.[generate]`; for searching an existing atlas,
+install `.[search]`.
+
+## Build a map in a few lines
+
+```python
+from hammlet import AtlasConfig, ParameterGrid, build_atlas
+
+grid = ParameterGrid(
+    s=(0.8, 1.0, 1.2),
+    q=(1e-4, 3e-4, 1e-3),
+    rho=(3e-4, 1e-3),
+)
+build_atlas("atlas", grid, config=AtlasConfig())
+```
+
+`AtlasConfig()` uses the production defaults `M=384`, 256 radial nodes, and
+adaptive angular sampling up to 8192 points near caustics. All accuracy/work
+parameters can be overridden explicitly.
+
+The same API accepts logarithmic axes without manual exponentiation:
+
+```python
+grid = ParameterGrid.from_log10(
+    log_s=[-0.2, 0.0, 0.2],
+    log_q=[-4.0, -3.5, -3.0],
+    log_rho=[-3.5, -3.0],
+)
+```
+
+## Search the generated atlas
+
+```python
+import numpy as np
+from hammlet import Atlas, Dataset, Geometry
+
+data = np.loadtxt("lightcurve.dat")  # columns: time, flux, flux_error
+dataset = Dataset(time=data[:, 0], flux=data[:, 1], error=data[:, 2])
+
+atlas = Atlas.open("atlas")
+result = atlas.search(
+    [dataset],
+    [Geometry(t0=2459000.0, u0=0.08, tE=24.0)],
+)
+
+best = result.candidates[0]
+print(best.s, best.q, best.rho, best.alpha, best.chi2)
+print(best.chi2_lower, best.chi2_upper)
+```
+
+Multiple observatories are separate `Dataset` objects, so each receives its own
+analytically profiled source and blend flux. Multiple nearby `Geometry` seeds
+search `(t0,u0,tE)` as one compiled batch. The result defaults to 300 seeds for
+the next pipeline stage.
+
+## Multi-machine generation
+
+Every map has a deterministic ID in this order:
+
+```text
+for s in s_grid:
+    for q in q_grid:
+        for rho in rho_grid:
+            map_id += 1
+```
+
+Split the ordered table into, for example, 32 contiguous jobs. Every machine
+uses the same JSON file and output filesystem:
+
+```bash
+hammlet build examples/distributed_build.json /shared/hammlet-atlas \
+  --part-index 0 --part-count 32
+```
+
+Submit the same command with indices `0..31`, then merge once:
+
+```bash
+hammlet merge /shared/hammlet-atlas
+```
+
+Completed parts are immutable. A job writes privately and becomes visible only
+after an atomic rename. Merge rejects missing parts, grid/config mismatches,
+duplicate map IDs, and incompatible coefficient formats. See
+[distributed generation](docs/distributed-generation.md) for scheduler
+examples and restart behavior.
+
+## Reproducible output
+
+Run:
+
+```bash
+python examples/build_and_plot.py
+```
+
+It directly evaluates one planetary binary lens, builds a compact example
+atlas, reconstructs the Fourier map on a Cartesian grid, and writes the image
+below.
+
+![Reconstructed planetary magnification map](assets/example_magnification_map.png)
+
+## Documentation
+
+- [Mathematical method and algorithms](docs/theory.md)
+- [Python API and configuration](docs/api.md)
+- [Distributed generation and atlas format](docs/distributed-generation.md)
+- [Accuracy certificates and limitations](docs/accuracy.md)
+- [Development and tests](docs/development.md)
+
+## Scope and important limitations
+
+- The stored angular certificate is deterministic relative to the periodic
+  piecewise-linear interpolant through the adaptive VBM angular samples.
+- Complex64 storage rounding is included in that angular envelope.
+- The current release does **not** yet certify VBM variation between adjacent
+  radial nodes, nor VBMicrolensing's own internal numerical error. Therefore,
+  the reported chi-square interval is conditional on the atlas node envelopes;
+  it is not a formal interval enclosure of continuous direct VBM everywhere.
+- Always re-evaluate retained seeds with direct VBMicrolensing before scientific
+  inference.
+
+## License
+
+MIT. Please also respect the license and citation requirements of
+VBMicrolensing and JAX.
+
