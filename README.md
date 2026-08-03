@@ -83,6 +83,22 @@ scientific VBM fit.
 
 ## Multi-machine generation
 
+For compatibility with the released AdaMGrid binary map-set parameter
+selection, use the built-in preset:
+
+```bash
+hammlet build-maps examples/adamgrid_default.json /shared/hammlet-maps \
+  --part-index 0 --part-count 30
+```
+
+The preset reproduces AdaMGrid's inclusive decimal axes and binary-lens
+coverage mask: 3,777 selected `(logs, logq)` cells, nine `logrho` values, and
+33,993 map rows in total. The example config uses eight s-buckets and five
+q-buckets so that the selected mask yields 30 non-empty Hammlet partitions.
+For a 60-partition, three-machine run (20 jobs per host), use
+`examples/adamgrid_default_60.json`; its finer radial layout yields 161
+non-empty buckets, enough for all 60 partitions.
+
 Every map has a deterministic ID in this order:
 
 ```text

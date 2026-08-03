@@ -13,6 +13,28 @@ def test_parameter_grid_has_stable_order():
     np.testing.assert_allclose(table[2, 1:], np.log10([1.2, 1e-4, 1e-3]))
 
 
+def test_adamgrid_default_matches_released_map_count():
+    grid = ParameterGrid.from_adamgrid_default()
+    table = grid.table()
+    assert len(grid.active_sq_pairs) == 3777
+    assert table.shape == (33993, 4)
+    np.testing.assert_array_equal(table[:, 0], np.arange(33993))
+    np.testing.assert_allclose(table[:9, 1:], np.column_stack(
+        (
+            np.full(9, -1.5),
+            np.full(9, -1.9),
+            np.linspace(-4.0, -1.6, 9),
+        )
+    ))
+    np.testing.assert_allclose(table[-9:, 1:], np.column_stack(
+        (
+            np.full(9, 1.5),
+            np.full(9, 4.0),
+            np.linspace(-4.0, -1.6, 9),
+        )
+    ))
+
+
 def test_partitions_are_complete_and_disjoint():
     selected = [
         np.arange(17)[Partition(index, 4).rows(17)] for index in range(4)
@@ -26,4 +48,3 @@ def test_radial_default_preserves_node_count_and_outer_coverage():
     assert nodes[0] == 0.0
     assert nodes[-1] == pytest.approx(2.5)
     assert np.all(np.diff(nodes) > 0.0)
-

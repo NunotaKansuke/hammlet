@@ -13,7 +13,9 @@ from .config import MapConfig, ParameterGrid, Partition
 def _config(path: Path):
     content = json.loads(path.read_text(encoding="utf-8"))
     grid_data = content["grid"]
-    if {"log_s", "log_q", "log_rho"}.issubset(grid_data):
+    if grid_data.get("preset") == "adamgrid-default":
+        grid = ParameterGrid.from_adamgrid_default()
+    elif {"log_s", "log_q", "log_rho"}.issubset(grid_data):
         grid = ParameterGrid.from_log10(**grid_data)
     else:
         grid = ParameterGrid(**grid_data)
