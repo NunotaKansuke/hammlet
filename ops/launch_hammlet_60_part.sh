@@ -18,8 +18,8 @@ if [ ! -f "$CONFIG" ]; then
   echo "missing production config: $CONFIG" >&2
   exit 1
 fi
-if [ "$(git -C "$REPO" rev-parse HEAD)" != "2d7bcc1" ]; then
-  echo "repository is not at the required production commit" >&2
+if [ -n "$(git -C "$REPO" status --porcelain)" ]; then
+  echo "repository has uncommitted changes; refusing to launch" >&2
   exit 1
 fi
 

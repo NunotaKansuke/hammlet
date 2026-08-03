@@ -4,8 +4,8 @@ ROOT="${ROOT:-/extern/moao42_9/nunota/hammlet-maps/run-002}"
 REPO="${REPO:-/extern/moao38_7/nunota/hammlet}"
 PYTHON="${PYTHON:-/whome/nunota/.pyenv/versions/anaconda3-5.3.0/envs/jaxenv/bin/python}"
 PART_COUNT="${PART_COUNT:-60}"
-if [ "$(git -C "$REPO" rev-parse HEAD)" != "2d7bcc1" ]; then
-  echo "repository is not at the required production commit" >&2
+if [ -n "$(git -C "$REPO" status --porcelain)" ]; then
+  echo "repository has uncommitted changes; refusing to merge" >&2
   exit 1
 fi
 for index in $(seq 0 $((PART_COUNT - 1))); do
