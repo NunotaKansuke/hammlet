@@ -18,7 +18,7 @@ if [ ! -f "$CONFIG" ]; then
   echo "missing production config: $CONFIG" >&2
   exit 1
 fi
-if [ -n "$(git -C "$REPO" status --porcelain)" ]; then
+if [ -n "$(cd "$REPO" && git status --porcelain)" ]; then
   echo "repository has uncommitted changes; refusing to launch" >&2
   exit 1
 fi
@@ -51,7 +51,7 @@ fi
 mkdir -p "$ROOT/logs"
 LOG="$ROOT/logs/part-$(printf '%05d' "$PART_INDEX")-$(date +%Y%m%dT%H%M%S).log"
 SHA256="$(sha256sum "$CONFIG" | awk '{print $1}')"
-COMMIT="$(git -C "$REPO" rev-parse HEAD)"
+COMMIT="$(cd "$REPO" && git rev-parse HEAD)"
 nohup env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONPATH="$REPO/src" \
   "$PYTHON" -c 'from hammlet.cli import main; raise SystemExit(main())' \
   build-maps "$CONFIG" "$ROOT" --part-index "$PART_INDEX" --part-count "$PART_COUNT" \
