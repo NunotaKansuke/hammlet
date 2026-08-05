@@ -135,12 +135,20 @@ def build_maps(
     if destination.exists():
         raise FileExistsError(f"map destination already exists: {destination}")
     destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary = destination.with_name(f".{destination.name}.partial-{os.getpid()}")
-    if temporary.exists():
-        raise FileExistsError(f"stale partial output exists: {temporary}")
+    partials = sorted(destination.parent.glob(f".{destination.name}.partial-*"))
+    if len(partials) > 1:
+        raise FileExistsError(
+            f"multiple partial outputs exist for {destination}: {partials}"
+        )
+    if partials:
+        temporary = partials[0]
+        resume = True
+    else:
+        temporary = destination.with_name(f".{destination.name}.partial-{os.getpid()}")
+        resume = False
+        temporary.mkdir(parents=True)
 
     try:
-        temporary.mkdir(parents=True)
         entries = []
         selected_ids: list[int] = []
         for bucket in buckets:
@@ -162,7 +170,12 @@ def build_maps(
                 spectrum_config=_spectrum_config(config),
                 shard_size=config.shard_size,
             )
-            builder.build(child, _specs(rows, config), progress_every=progress_every)
+            builder.build(
+                child,
+                _specs(rows, config),
+                progress_every=progress_every,
+                resume=resume,
+            )
             np.save(child / "radial_pilot_map_ids.npy", pilot_rows[:, 0].astype(np.int64))
             np.save(child / "radial_pilot_radii.npy", pilot_radii)
             np.save(child / "radial_pilot_difficulty.npy", difficulty)
@@ -205,8 +218,8 @@ def build_maps(
         )
         temporary.replace(destination)
     except BaseException:
-        if temporary.exists():
-            shutil.rmtree(temporary)
+        # Keep the partial tree as a checkpoint.  The next invocation reuses
+        # durable map shards and only evaluates map IDs not already present.
         raise
     return destination
 
@@ -224,7 +237,17 @@ def merge_maps(output: str | Path, *, destination: str | Path | None = None) -> 
         raise ValueError(f"expected all partition indices 0..{expected - 1}; got {indices}")
     if any(record["grid"] != records[0]["grid"] for record in records[1:]):
         raise ValueError("parts were generated from different parameter grids")
-    if any(record["config"] != records[0]["config"] for record in records[1:]):
+    def merge_config(record: dict[str, object]) -> dict[str, object]:
+        # Shard size changes only the on-disk packing/checkpoint granularity;
+        # it does not change the generated coefficients.
+        config = dict(record["config"])
+        config.pop("shard_size", None)
+        return config
+
+    if any(
+        merge_config(record) != merge_config(records[0])
+        for record in records[1:]
+    ):
         raise ValueError("parts were generated with different map configs")
 
     destination = Path(destination or output / "maps").resolve()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -97,24 +98,93 @@ class PolarAtlasBuilder:
         spectrum[..., : coefficients.shape[-1]] = coefficients * n
         return spectrum
 
+    def _existing_shards(
+        self, output: Path
+    ) -> tuple[list[dict[str, object]], set[int], bool, int]:
+        """Return valid checkpoint shards already present in ``output``.
+
+        A shard is considered durable only when all of its arrays are present
+        and have the same leading dimension as ``map_ids.npy``.  This lets a
+        killed process leave an incomplete shard behind without making the
+        next resume trust corrupted data.
+        """
+        entries: list[dict[str, object]] = []
+        map_ids: set[int] = set()
+        has_certificates = False
+        next_shard = 0
+        required = {
+            "x_coeff.npy",
+            "x2_coeff.npy",
+            "reconstruction_error.npy",
+            "deviation_envelope.npy",
+            "map_ids.npy",
+        }
+        if self.core_m_max < self.m_max:
+            required.update(
+                {
+                    "x_coeff_extension.npy",
+                    "x2_coeff_extension.npy",
+                    "reconstruction_error_full.npy",
+                }
+            )
+
+        for shard in sorted(output.glob("shard_*")):
+            if not shard.is_dir():
+                continue
+            match = re.fullmatch(r"shard_(\d+)", shard.name)
+            if match:
+                next_shard = max(next_shard, int(match.group(1)) + 1)
+            if not required.issubset({path.name for path in shard.iterdir()}):
+                continue
+            try:
+                ids = np.asarray(np.load(shard / "map_ids.npy"), dtype=np.int64)
+                if ids.ndim != 1 or not len(ids):
+                    continue
+                for name in required - {"map_ids.npy"}:
+                    values = np.load(shard / name, mmap_mode="r")
+                    if values.shape[0] != len(ids):
+                        raise ValueError("checkpoint array length mismatch")
+                if any(int(value) in map_ids for value in ids):
+                    raise ValueError("duplicate map ID in checkpoint shards")
+            except (OSError, ValueError, TypeError):
+                continue
+            map_ids.update(int(value) for value in ids)
+            has_certificates = has_certificates or (shard / "certified_error.npy").is_file()
+            entries.append(
+                {
+                    "path": shard.name,
+                    "count": len(ids),
+                    "map_ids": [int(value) for value in ids],
+                }
+            )
+        return entries, map_ids, has_certificates, next_shard
+
     def build(
         self,
         output_path: str | Path,
         specs: Iterable[MapBuildSpec],
         *,
         progress_every: int = 0,
+        resume: bool = False,
     ) -> Path:
         output = Path(output_path)
-        if output.exists() and any(output.iterdir()):
+        if output.exists() and any(output.iterdir()) and not resume:
             raise FileExistsError(f"atlas output is not empty: {output}")
         output.mkdir(parents=True, exist_ok=True)
         np.save(output / "radial_nodes.npy", self.radial_nodes)
 
         all_parameters: list[tuple[float, float, float]] = []
         all_map_ids: list[int] = []
-        shard_entries: list[dict[str, object]] = []
+        if resume:
+            shard_entries, existing_ids, has_certificates, shard_index = (
+                self._existing_shards(output)
+            )
+        else:
+            shard_entries = []
+            existing_ids = set()
+            has_certificates = False
+            shard_index = 0
         pending: list[tuple[MapBuildSpec, dict[str, np.ndarray]]] = []
-        has_certificates = False
         started = time.monotonic()
 
         def flush(shard_index: int) -> None:
@@ -122,25 +192,26 @@ class PolarAtlasBuilder:
             if not pending:
                 return
             shard_dir = output / f"shard_{shard_index:04d}"
-            shard_dir.mkdir()
+            temporary = output / f".shard_{shard_index:04d}.partial-{time.time_ns()}"
+            temporary.mkdir()
             core_modes = self.core_m_max + 1
             for name in ("x_coeff", "x2_coeff"):
                 values = np.stack([item[1][name] for item in pending])
-                np.save(shard_dir / f"{name}.npy", values[..., :core_modes])
+                np.save(temporary / f"{name}.npy", values[..., :core_modes])
                 if self.core_m_max < self.m_max:
                     np.save(
-                        shard_dir / f"{name}_extension.npy",
+                        temporary / f"{name}_extension.npy",
                         values[..., core_modes:],
                     )
             np.save(
-                shard_dir / "reconstruction_error.npy",
+                temporary / "reconstruction_error.npy",
                 np.stack(
                     [item[1]["reconstruction_error_core"] for item in pending]
                 ),
             )
             if self.core_m_max < self.m_max:
                 np.save(
-                    shard_dir / "reconstruction_error_full.npy",
+                    temporary / "reconstruction_error_full.npy",
                     np.stack(
                         [item[1]["reconstruction_error"] for item in pending]
                     ),
@@ -148,34 +219,41 @@ class PolarAtlasBuilder:
             if "certified_error" in pending[0][1]:
                 has_certificates = True
                 np.save(
-                    shard_dir / "certified_error.npy",
+                    temporary / "certified_error.npy",
                     np.stack(
                         [item[1]["certified_error_core"] for item in pending]
                     ),
                 )
                 if self.core_m_max < self.m_max:
                     np.save(
-                        shard_dir / "certified_error_full.npy",
+                        temporary / "certified_error_full.npy",
                         np.stack(
                             [item[1]["certified_error"] for item in pending]
                         ),
                     )
             np.save(
-                shard_dir / "deviation_envelope.npy",
+                temporary / "deviation_envelope.npy",
                 np.stack([item[1]["deviation_envelope"] for item in pending]),
             )
             map_ids = np.asarray([item[0].map_id for item in pending], dtype=np.int64)
-            np.save(shard_dir / "map_ids.npy", map_ids)
+            np.save(temporary / "map_ids.npy", map_ids)
+            temporary.replace(shard_dir)
             shard_entries.append(
                 {"path": shard_dir.name, "count": len(pending), "map_ids": map_ids.tolist()}
             )
             pending.clear()
 
-        shard_index = 0
+        seen_ids: set[int] = set()
         for spec in specs:
-            pending.append((spec, self.sample(spec.evaluator)))
+            map_id = int(spec.map_id)
+            if map_id in seen_ids:
+                raise ValueError(f"duplicate map ID in build specs: {map_id}")
+            seen_ids.add(map_id)
             all_map_ids.append(spec.map_id)
             all_parameters.append((spec.logs, spec.logq, spec.logrho))
+            if map_id in existing_ids:
+                continue
+            pending.append((spec, self.sample(spec.evaluator)))
             if progress_every and len(all_map_ids) % progress_every == 0:
                 elapsed = time.monotonic() - started
                 print(
@@ -187,6 +265,12 @@ class PolarAtlasBuilder:
                 flush(shard_index)
                 shard_index += 1
         flush(shard_index)
+        missing_ids = existing_ids.difference(seen_ids)
+        if missing_ids:
+            raise ValueError(
+                "checkpoint contains map IDs absent from build specs: "
+                f"{sorted(missing_ids)[:5]}"
+            )
         if not all_map_ids:
             raise ValueError("cannot build an empty atlas")
 

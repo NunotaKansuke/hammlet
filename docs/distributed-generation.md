@@ -35,9 +35,12 @@ unchanged.
 ## Restart semantics
 
 - A completed part is immutable and a repeated build fails visibly.
-- An interrupted job has only a hidden `.partial-PID` directory.
-- Remove a stale partial directory only after confirming its process/job is no
-  longer alive, then resubmit the same part index.
+- An interrupted job keeps its hidden `.partial-PID` directory as a checkpoint.
+- With `shard_size=1`, every completed map has its own atomically published
+  shard. A restart reuses those shards and evaluates only map IDs that are
+  still missing; it does not discard the partial tree.
+- A stale partial may be resumed only after confirming its process/job is no
+  longer alive. Multiple competing partials for one part are rejected.
 - `merge-maps` never deletes or modifies input parts.
 
 ## Maps directory

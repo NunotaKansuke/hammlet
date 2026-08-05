@@ -50,11 +50,11 @@ for ((index = WORKER_ID; index < PART_COUNT; index += WORKER_COUNT)); do
     continue
   fi
 
-  while IFS= read -r -d '' stale; do
-    echo "quarantine stale $stale"
-    mv -- "$stale" "$ROOT/aborted-restart/"
-  done < <(find "$ROOT/parts" -mindepth 1 -maxdepth 1 -type d \
-    -name ".${part_name}.partial-*" -print0)
+  partial_count=$(find "$ROOT/parts" -mindepth 1 -maxdepth 1 -type d \
+    -name ".${part_name}.partial-*" | wc -l)
+  if [ "$partial_count" -gt 0 ]; then
+    echo "resume partial $part_name count=$partial_count"
+  fi
 
   log="$ROOT/logs/$part_name-$(date +%Y%m%dT%H%M%S).log"
   {

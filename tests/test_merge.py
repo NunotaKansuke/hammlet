@@ -15,7 +15,7 @@ class ConstantEvaluator:
         return np.full(np.broadcast(x, y).shape, self.value)
 
 
-def write_part(root, index, map_ids):
+def write_part(root, index, map_ids, *, config_shard_size=256):
     part = root / "parts" / f"part-{index:05d}-of-00002"
     child = part / f"s{index:03d}_q000"
     builder = PolarAtlasBuilder(
@@ -54,7 +54,7 @@ def write_part(root, index, map_ids):
     )
     metadata = {
         "grid": {"s": [1.0, 1.1, 1.2], "q": [0.001], "rho": [0.001]},
-        "config": {"m_max": 2},
+        "config": {"m_max": 2, "shard_size": config_shard_size},
         "partition": {"index": index, "count": 2},
         "selected_map_ids": map_ids,
     }
@@ -68,3 +68,11 @@ def test_merge_validates_and_preserves_global_ids(tmp_path):
     maps = Maps.open(destination)
     np.testing.assert_array_equal(maps.map_ids, [0, 1, 2])
     assert maps._core.parameters_for(2)[0] == 0.2
+
+
+def test_merge_allows_different_checkpoint_shard_sizes(tmp_path):
+    write_part(tmp_path, 0, [0, 1], config_shard_size=256)
+    write_part(tmp_path, 1, [2], config_shard_size=1)
+
+    destination = merge_maps(tmp_path)
+    assert json.loads((destination / "manifest.json").read_text())["n_maps"] == 3

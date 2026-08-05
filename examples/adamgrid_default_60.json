@@ -8,6 +8,7 @@
     "radial_nodes": 256,
     "radial_s_buckets": 20,
     "radial_q_buckets": 12,
+    "shard_size": 1,
     "radial_certificate_levels": 1
   }
 }
