@@ -152,6 +152,9 @@ and its signed residual.
 - [Accuracy certificates and limitations](docs/accuracy.md)
 - [Numerical validation plan](docs/validation-plan.md)
 - [Development and tests](docs/development.md)
+- [Local Roman test tool](docs/roman-local-test.md)
+- [PSPL coordinate frames and the FFT search issue](docs/pspl-coordinate-frame-fft-search.md)
+- [Roman coordinate-corrected 200-event LM run](docs/roman-lm-coordinate-corrected.md)
 
 ## Scope and important limitations
 

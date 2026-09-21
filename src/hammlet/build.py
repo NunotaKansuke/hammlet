@@ -39,6 +39,7 @@ def _spectrum_config(config: MapConfig) -> DirectSpectrumConfig:
         caustic_points_per_side=config.caustic_points_per_side,
         diagnostic_m_max=config.diagnostic_m_max,
         radial_certificate_levels=config.radial_certificate_levels,
+        build_radial_certificate=config.build_radial_certificate,
     )
 
 
@@ -55,6 +56,7 @@ def _specs(rows: np.ndarray, config: MapConfig) -> Iterable[MapBuildSpec]:
                 10.0**logrho,
                 tolerance=config.vbm_tolerance,
                 relative_tolerance=config.vbm_relative_tolerance,
+                coordinate_frame=config.coordinate_frame,
             ),
         )
 
@@ -99,6 +101,7 @@ def _pilot_evaluators(rows: np.ndarray, config: MapConfig):
             10.0**logrho,
             tolerance=config.vbm_tolerance,
             relative_tolerance=config.vbm_relative_tolerance,
+            coordinate_frame=config.coordinate_frame,
         )
         for _, logs, logq, logrho in pilot_rows
     ]

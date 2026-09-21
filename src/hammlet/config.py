@@ -204,6 +204,8 @@ class MapConfig:
     radial_pilot_m_max: int = 24
     radial_adaptive_fraction: float = 0.65
     radial_certificate_levels: int = 1
+    build_radial_certificate: bool = True
+    coordinate_frame: str = "map"
 
     def __post_init__(self) -> None:
         positive_ints = (
@@ -237,6 +239,8 @@ class MapConfig:
             raise ValueError("radial_max must be positive")
         if self.radial_certificate_levels > 3:
             raise ValueError("radial_certificate_levels cannot exceed three")
+        if self.coordinate_frame not in ("map", "native"):
+            raise ValueError("coordinate_frame must be 'map' or 'native'")
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)

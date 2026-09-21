@@ -18,7 +18,6 @@ converging.
 from __future__ import annotations
 
 import numpy as np
-from scipy import sparse
 
 DEFAULT_RADIAL_ORDER = 1
 SUPPORTED_RADIAL_ORDERS = (1, 3)
@@ -142,6 +141,14 @@ def segmented_angular_sums(
     single sparse-times-dense product, which measured roughly nine times faster
     on the largest benchmark event.
     """
+    try:
+        from scipy import sparse
+    except ImportError as error:
+        raise ImportError(
+            "segmented_angular_sums requires SciPy; install the search "
+            "compatibility environment before running map searches"
+        ) from error
+
     indices = np.asarray(indices)
     weights = np.asarray(weights, dtype=np.float64)
     angular = np.asarray(angular)

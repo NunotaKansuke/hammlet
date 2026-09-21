@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import sys
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -11,6 +13,7 @@ from hammlet._core.atlas_builder import MapBuildSpec
 from hammlet._core.direct_vbm import (
     DirectSpectrumConfig,
     DirectVBMPolarAtlasBuilder,
+    VBMBinaryLensEvaluator,
     adaptive_ring_spectrum,
 )
 from hammlet._core.reference import direct_alpha_scan
@@ -79,6 +82,45 @@ def _config(**updates) -> DirectSpectrumConfig:
     }
     values.update(updates)
     return DirectSpectrumConfig(**values)
+
+
+def test_vbm_coordinate_frames_are_physically_equivalent(monkeypatch) -> None:
+    class FakeVbm:
+        def __init__(self):
+            self.Tol = None
+            self.RelTol = None
+            self.a1 = None
+
+        def Caustics(self, separation, mass_ratio):
+            return [np.asarray([[0.1, 0.0], [0.1, 0.2], [0.1, 0.0]])]
+
+        def BinaryMag2(self, separation, mass_ratio, x, y, source_radius):
+            return 2.0 + x + 3.0 * y
+
+    monkeypatch.setitem(
+        sys.modules,
+        "VBMicrolensing",
+        SimpleNamespace(VBMicrolensing=FakeVbm),
+    )
+    separation = 2.0
+    mass_ratio = 0.5
+    shift = -(separation - 1.0 / separation) * mass_ratio / (1.0 + mass_ratio)
+    x = np.asarray([-0.4, 0.0, 0.8])
+    y = np.asarray([0.2, -0.3, 0.5])
+    native = VBMBinaryLensEvaluator(
+        separation, mass_ratio, 0.01, coordinate_frame="native"
+    )
+    map_frame = VBMBinaryLensEvaluator(
+        separation, mass_ratio, 0.01, coordinate_frame="map"
+    )
+
+    np.testing.assert_allclose(
+        native.magnification(x, y), map_frame.magnification(x - shift, y)
+    )
+    np.testing.assert_allclose(
+        native.caustic_components[0][:, 0] - shift,
+        map_frame.caustic_components[0][:, 0],
+    )
 
 
 def test_nested_fft_recovers_smooth_low_modes() -> None:
@@ -152,6 +194,32 @@ def test_direct_builder_writes_compatible_atlas_and_provenance(tmp_path) -> None
     shard = next(atlas.iter_shards(m_max=4))
     assert shard.certified_error is not None
     assert np.all(shard.certified_error >= shard.reconstruction_error)
+
+
+def test_direct_builder_can_skip_radial_certificate(tmp_path) -> None:
+    config = _config(
+        m_max=4,
+        core_m_max=2,
+        diagnostic_m_max=8,
+        build_radial_certificate=False,
+    )
+    output = DirectVBMPolarAtlasBuilder(
+        np.asarray([0.1, 0.5, 1.0]),
+        spectrum_config=config,
+        shard_size=1,
+    ).build(
+        tmp_path / "angular-only",
+        [MapBuildSpec(3, 0.0, -3.0, -2.0, SmoothRing())],
+    )
+    atlas = PolarAtlas(output)
+    manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+
+    assert manifest["error_certificate"] == "adaptive-vbm-angular-reference-only"
+    assert manifest["direct_diagnostics"]["radial_holdout_evaluations"] == 0
+    with np.load(output / "direct_diagnostics.npz") as diagnostics:
+        assert diagnostics["radial_holdout_evaluations"] == 0
+    shard = next(atlas.iter_shards(m_max=4))
+    assert shard.certified_error is not None
 
 
 def test_radial_certificate_reaches_profiled_chi2_interval(tmp_path) -> None:

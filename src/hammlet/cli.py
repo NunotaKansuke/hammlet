@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .build import build_maps, merge_maps
 from .config import MapConfig, ParameterGrid, Partition
+from ._core.map_queue import MapQueue
 
 
 def _config(path: Path):
@@ -34,6 +35,9 @@ def _parser() -> argparse.ArgumentParser:
     merge = commands.add_parser("merge-maps", help="merge a complete set of parts")
     merge.add_argument("output", type=Path)
     merge.add_argument("--destination", type=Path)
+    status = commands.add_parser("queue-status", help="inspect a map-level queue")
+    status.add_argument("queue", type=Path)
+    status.add_argument("--stale-after", type=float, default=600.0)
     return parser
 
 
@@ -48,7 +52,15 @@ def main(argv: list[str] | None = None) -> int:
             partition=Partition(args.part_index, args.part_count),
             progress_every=args.progress_every,
         )
-    else:
+    elif args.command == "merge-maps":
         result = merge_maps(args.output, destination=args.destination)
+    else:
+        queue = MapQueue.open(args.queue)
+        print(json.dumps(queue.status(stale_after=args.stale_after).to_dict(), indent=2))
+        return 0
     print(result)
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

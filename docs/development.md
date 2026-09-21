@@ -24,3 +24,6 @@ tolerances are enclosed.
 
 The required strata, phase boundaries, metadata, and acceptance gate are defined
 in [the numerical validation plan](validation-plan.md).
+
+For rebuilding VBMicrolensing 5.5 for old-glibc hosts, see the
+[VBMicrolensing compatibility build](vbm-compatibility.md).
