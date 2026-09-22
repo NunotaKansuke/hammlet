@@ -44,14 +44,14 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--s-min",
         type=float,
-        default=1.0e-2,
-        help="lower display limit for both s axes (default: 1e-2)",
+        default=1.0e-1,
+        help="lower display limit for both s axes (default: 1e-1)",
     )
     parser.add_argument(
         "--s-max",
         type=float,
-        default=1.0e2,
-        help="upper display limit for both s axes (default: 1e2)",
+        default=1.0e1,
+        help="upper display limit for both s axes (default: 1e1)",
     )
     return parser.parse_args()
 

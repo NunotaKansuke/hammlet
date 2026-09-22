@@ -5,8 +5,8 @@
   "q_max": 1.1,
   "q_folded_at_one": true,
   "s_limits": [
-    0.01,
-    100.0
+    0.1,
+    10.0
   ],
   "n_plotted": 175,
   "n_input_lm": 199,
