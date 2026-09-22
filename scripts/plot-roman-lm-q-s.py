@@ -38,8 +38,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--q-max",
         type=float,
-        default=1.0e3,
-        help="upper display limit for both q axes (default: 1e3)",
+        default=1.0,
+        help="upper display limit for folded q axes (default: 1)",
     )
     parser.add_argument(
         "--s-min",
@@ -60,7 +60,12 @@ def main() -> int:
     args = _parse_args()
     if args.dchi2_min < 0.0:
         raise SystemExit("--dchi2-min must be non-negative")
-    if args.q_max <= 0.0 or args.s_min <= 0.0 or args.s_max <= args.s_min:
+    if (
+        args.q_max <= 0.0
+        or args.q_max > 1.0
+        or args.s_min <= 0.0
+        or args.s_max <= args.s_min
+    ):
         raise SystemExit("invalid positive plot limits")
 
     summary = _read(args.summary.expanduser().resolve())
@@ -118,9 +123,10 @@ def main() -> int:
 
     truth_q = np.asarray([row["truth_q"] for row in rows])
     truth_s = np.asarray([row["truth_s"] for row in rows])
-    recovered_q = np.minimum(
-        np.asarray([row["recovered_q"] for row in rows]), args.q_max
-    )
+    truth_q = np.minimum(truth_q, 1.0 / truth_q)
+    recovered_q = np.asarray([row["recovered_q"] for row in rows])
+    recovered_q = np.minimum(recovered_q, 1.0 / recovered_q)
+    recovered_q = np.minimum(recovered_q, args.q_max)
     recovered_s = np.asarray([row["recovered_s"] for row in rows])
 
     figure, axes = plt.subplots(1, 2, figsize=(12.0, 5.2), constrained_layout=True)
@@ -148,8 +154,8 @@ def main() -> int:
         yscale="log",
         xlim=(1.0e-6, args.q_max),
         ylim=(1.0e-6, args.q_max),
-        xlabel="truth q",
-        ylabel="LM-recovered q",
+        xlabel="truth q (folded at 1)",
+        ylabel="LM-recovered q (folded at 1)",
         title=f"q ({len(rows)} events)",
     )
     figure.colorbar(q_artist, ax=axes[0], label="truth s")
@@ -170,6 +176,13 @@ def main() -> int:
         color="0.35",
         lw=1.0,
     )
+    axes[1].plot(
+        [args.s_min, args.s_max],
+        [1.0 / args.s_min, 1.0 / args.s_max],
+        color="0.35",
+        lw=1.0,
+        linestyle=":",
+    )
     axes[1].set(
         xscale="log",
         yscale="log",
@@ -179,12 +192,12 @@ def main() -> int:
         ylabel="LM-recovered s",
         title=f"s ({len(rows)} events)",
     )
-    figure.colorbar(s_artist, ax=axes[1], label="truth q")
+    figure.colorbar(s_artist, ax=axes[1], label="truth q (folded at 1)")
     for axis in axes:
         axis.grid(alpha=0.22, which="both")
         axis.set_aspect("equal", adjustable="box")
     figure.suptitle(
-        rf"Roman injection--recovery: PSPL--truth $Deltachi^2>{args.dchi2_min:g}$"
+        rf"Roman injection--recovery: PSPL--truth $\Delta\chi^2>{args.dchi2_min:g}$"
     )
 
     output = args.output.expanduser().resolve()
@@ -200,6 +213,7 @@ def main() -> int:
                 "pspl_truth": str(args.pspl_truth.expanduser().resolve()),
                 "dchi2_min_exclusive": args.dchi2_min,
                 "q_max": args.q_max,
+                "q_folded_at_one": True,
                 "s_limits": [args.s_min, args.s_max],
                 "n_plotted": len(rows),
                 "n_input_lm": len(lm_events),

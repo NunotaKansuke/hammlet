@@ -1,16 +1,17 @@
-# Roman / Hammlet truth-centered map-frame batch200 results
+# Roman / Hammlet truth-centered Δχ² > 100 results
 
-Static result page for the 199-event truth-centered Roman/Hammlet run. Each event figure
-shows the best truth-centered FFT seed light curve on the left and its
-corresponding \(\Delta\chi^2\) map on the right. The data points are
-drawn as dark, enlarged markers in front of the model curve.
+Static result page for the 175-event, truth-centered Roman/Hammlet sample.
+Each event figure shows the best truth-centered FFT seed light curve on the
+left and its corresponding Δχ² map on the right. The data points are dark and
+enlarged; the model curve is drawn in front.
 
 ## Run note
 
-- Event IDs shown: `9910000`–`9910099` and `9920000`–`9920098` (199 events)
-- The original 200-event universe also contained `9920099`; it is intentionally
-  omitted from this result page.
-- Truth-centered FFT + LM completed: 199 events
+- Display selection: Δχ²(PSPL−truth) > 100 (strict)
+- Events shown: 175
+- Events omitted by the display cut: 24
+- The underlying truth-centered FFT + LM run produced 199 event records
+- `9920099` was not part of that 199-event run and is not shown here
 - Data points per event: `23,104`
 - FFT map evaluation: `M=128`, `n_alpha=540`, radial order `1`
 - Parallelism: `16 workers × 1 thread`
@@ -23,25 +24,11 @@ not changed; the map-frame translation is applied when evaluating the legacy
 AdaMGrid atlas. This is a truth-centered diagnostic run, not a blind recovery
 benchmark.
 
-## FFT and LM accounting
-
-The 199-event batch has:
-
-- FFT reports: `199/199`
-- LM result records: `199/199`
-- worker errors: `0`
-- non-negative LM \(\Delta\chi^2\) improvements: `199/199`
-- LM convergence flags: `3/199`
-
-The low convergence-flag count is expected from the deliberately short
-`max_nfev=25` run: the other events produced valid optimized records but
-stopped at the evaluation cap.
-
 ## q/s overview
 
-The q/s plot uses the 175 events with independently computed PSPL--truth
-\(\Delta\chi^2 > 100\). It is generated from the same truth-centered
-FFT seed and coordinate-corrected LM outputs.
+The q/s plot uses exactly the same 175-event strict cut. Both q values are
+folded with q → min(q, 1/q), so the q panel ends at q=1. The s panel includes
+the dotted reciprocal-degeneracy guide (s_{\rm rec}=1/s_{\rm truth}).
 
 ![Truth-centered Roman q/s recovery](../assets/roman-lm-q-s-maptruth-dchi2gt100.png)
 
@@ -50,11 +37,10 @@ Exact selection and plotting metadata:
 
 ## Figures
 
-The event figures below are generated from the truth-centered map-frame FFT
-outputs. The left panel uses the recovered FFT seed and the right panel shows
-the adaptive FFT \(\Delta\chi^2\) map.
+Only events passing the strict Δχ² > 100 display cut are included below. No
+auxiliary validation or exploratory figures are embedded.
 
-### Events 9910000–9910009
+### Events 9910000–9910009 (only Δχ² > 100)
 
 #### `9910000`
 
@@ -63,10 +49,6 @@ the adaptive FFT \(\Delta\chi^2\) map.
 #### `9910001`
 
 ![Roman truth-centered event 9910001](../assets/roman-maptruth-batch200/9910001.png)
-
-#### `9910002`
-
-![Roman truth-centered event 9910002](../assets/roman-maptruth-batch200/9910002.png)
 
 #### `9910003`
 
@@ -96,11 +78,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910009](../assets/roman-maptruth-batch200/9910009.png)
 
-### Events 9910010–9910019
-
-#### `9910010`
-
-![Roman truth-centered event 9910010](../assets/roman-maptruth-batch200/9910010.png)
+### Events 9910010–9910019 (only Δχ² > 100)
 
 #### `9910011`
 
@@ -118,10 +96,6 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910014](../assets/roman-maptruth-batch200/9910014.png)
 
-#### `9910015`
-
-![Roman truth-centered event 9910015](../assets/roman-maptruth-batch200/9910015.png)
-
 #### `9910016`
 
 ![Roman truth-centered event 9910016](../assets/roman-maptruth-batch200/9910016.png)
@@ -138,15 +112,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910019](../assets/roman-maptruth-batch200/9910019.png)
 
-### Events 9910020–9910029
-
-#### `9910020`
-
-![Roman truth-centered event 9910020](../assets/roman-maptruth-batch200/9910020.png)
-
-#### `9910021`
-
-![Roman truth-centered event 9910021](../assets/roman-maptruth-batch200/9910021.png)
+### Events 9910020–9910029 (only Δχ² > 100)
 
 #### `9910022`
 
@@ -160,18 +126,6 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910024](../assets/roman-maptruth-batch200/9910024.png)
 
-#### `9910025`
-
-![Roman truth-centered event 9910025](../assets/roman-maptruth-batch200/9910025.png)
-
-#### `9910026`
-
-![Roman truth-centered event 9910026](../assets/roman-maptruth-batch200/9910026.png)
-
-#### `9910027`
-
-![Roman truth-centered event 9910027](../assets/roman-maptruth-batch200/9910027.png)
-
 #### `9910028`
 
 ![Roman truth-centered event 9910028](../assets/roman-maptruth-batch200/9910028.png)
@@ -180,19 +134,11 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910029](../assets/roman-maptruth-batch200/9910029.png)
 
-### Events 9910030–9910039
-
-#### `9910030`
-
-![Roman truth-centered event 9910030](../assets/roman-maptruth-batch200/9910030.png)
+### Events 9910030–9910039 (only Δχ² > 100)
 
 #### `9910031`
 
 ![Roman truth-centered event 9910031](../assets/roman-maptruth-batch200/9910031.png)
-
-#### `9910032`
-
-![Roman truth-centered event 9910032](../assets/roman-maptruth-batch200/9910032.png)
 
 #### `9910033`
 
@@ -202,10 +148,6 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910034](../assets/roman-maptruth-batch200/9910034.png)
 
-#### `9910035`
-
-![Roman truth-centered event 9910035](../assets/roman-maptruth-batch200/9910035.png)
-
 #### `9910036`
 
 ![Roman truth-centered event 9910036](../assets/roman-maptruth-batch200/9910036.png)
@@ -214,19 +156,11 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910037](../assets/roman-maptruth-batch200/9910037.png)
 
-#### `9910038`
-
-![Roman truth-centered event 9910038](../assets/roman-maptruth-batch200/9910038.png)
-
 #### `9910039`
 
 ![Roman truth-centered event 9910039](../assets/roman-maptruth-batch200/9910039.png)
 
-### Events 9910040–9910049
-
-#### `9910040`
-
-![Roman truth-centered event 9910040](../assets/roman-maptruth-batch200/9910040.png)
+### Events 9910040–9910049 (only Δχ² > 100)
 
 #### `9910041`
 
@@ -244,17 +178,9 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910044](../assets/roman-maptruth-batch200/9910044.png)
 
-#### `9910045`
-
-![Roman truth-centered event 9910045](../assets/roman-maptruth-batch200/9910045.png)
-
 #### `9910046`
 
 ![Roman truth-centered event 9910046](../assets/roman-maptruth-batch200/9910046.png)
-
-#### `9910047`
-
-![Roman truth-centered event 9910047](../assets/roman-maptruth-batch200/9910047.png)
 
 #### `9910048`
 
@@ -264,7 +190,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910049](../assets/roman-maptruth-batch200/9910049.png)
 
-### Events 9910050–9910059
+### Events 9910050–9910059 (only Δχ² > 100)
 
 #### `9910050`
 
@@ -306,15 +232,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910059](../assets/roman-maptruth-batch200/9910059.png)
 
-### Events 9910060–9910069
-
-#### `9910060`
-
-![Roman truth-centered event 9910060](../assets/roman-maptruth-batch200/9910060.png)
-
-#### `9910061`
-
-![Roman truth-centered event 9910061](../assets/roman-maptruth-batch200/9910061.png)
+### Events 9910060–9910069 (only Δχ² > 100)
 
 #### `9910062`
 
@@ -328,14 +246,6 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910064](../assets/roman-maptruth-batch200/9910064.png)
 
-#### `9910065`
-
-![Roman truth-centered event 9910065](../assets/roman-maptruth-batch200/9910065.png)
-
-#### `9910066`
-
-![Roman truth-centered event 9910066](../assets/roman-maptruth-batch200/9910066.png)
-
 #### `9910067`
 
 ![Roman truth-centered event 9910067](../assets/roman-maptruth-batch200/9910067.png)
@@ -348,11 +258,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910069](../assets/roman-maptruth-batch200/9910069.png)
 
-### Events 9910070–9910079
-
-#### `9910070`
-
-![Roman truth-centered event 9910070](../assets/roman-maptruth-batch200/9910070.png)
+### Events 9910070–9910079 (only Δχ² > 100)
 
 #### `9910071`
 
@@ -374,10 +280,6 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910075](../assets/roman-maptruth-batch200/9910075.png)
 
-#### `9910076`
-
-![Roman truth-centered event 9910076](../assets/roman-maptruth-batch200/9910076.png)
-
 #### `9910077`
 
 ![Roman truth-centered event 9910077](../assets/roman-maptruth-batch200/9910077.png)
@@ -390,7 +292,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910079](../assets/roman-maptruth-batch200/9910079.png)
 
-### Events 9910080–9910089
+### Events 9910080–9910089 (only Δχ² > 100)
 
 #### `9910080`
 
@@ -416,10 +318,6 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910085](../assets/roman-maptruth-batch200/9910085.png)
 
-#### `9910086`
-
-![Roman truth-centered event 9910086](../assets/roman-maptruth-batch200/9910086.png)
-
 #### `9910087`
 
 ![Roman truth-centered event 9910087](../assets/roman-maptruth-batch200/9910087.png)
@@ -432,11 +330,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910089](../assets/roman-maptruth-batch200/9910089.png)
 
-### Events 9910090–9910099
-
-#### `9910090`
-
-![Roman truth-centered event 9910090](../assets/roman-maptruth-batch200/9910090.png)
+### Events 9910090–9910099 (only Δχ² > 100)
 
 #### `9910091`
 
@@ -454,10 +348,6 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910094](../assets/roman-maptruth-batch200/9910094.png)
 
-#### `9910095`
-
-![Roman truth-centered event 9910095](../assets/roman-maptruth-batch200/9910095.png)
-
 #### `9910096`
 
 ![Roman truth-centered event 9910096](../assets/roman-maptruth-batch200/9910096.png)
@@ -474,7 +364,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9910099](../assets/roman-maptruth-batch200/9910099.png)
 
-### Events 9920000–9920009
+### Events 9920000–9920009 (only Δχ² > 100)
 
 #### `9920000`
 
@@ -516,7 +406,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9920009](../assets/roman-maptruth-batch200/9920009.png)
 
-### Events 9920010–9920019
+### Events 9920010–9920019 (only Δχ² > 100)
 
 #### `9920010`
 
@@ -558,7 +448,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9920019](../assets/roman-maptruth-batch200/9920019.png)
 
-### Events 9920020–9920029
+### Events 9920020–9920029 (only Δχ² > 100)
 
 #### `9920020`
 
@@ -600,7 +490,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9920029](../assets/roman-maptruth-batch200/9920029.png)
 
-### Events 9920030–9920039
+### Events 9920030–9920039 (only Δχ² > 100)
 
 #### `9920030`
 
@@ -642,7 +532,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9920039](../assets/roman-maptruth-batch200/9920039.png)
 
-### Events 9920040–9920049
+### Events 9920040–9920049 (only Δχ² > 100)
 
 #### `9920040`
 
@@ -684,7 +574,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9920049](../assets/roman-maptruth-batch200/9920049.png)
 
-### Events 9920050–9920059
+### Events 9920050–9920059 (only Δχ² > 100)
 
 #### `9920050`
 
@@ -726,7 +616,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9920059](../assets/roman-maptruth-batch200/9920059.png)
 
-### Events 9920060–9920069
+### Events 9920060–9920069 (only Δχ² > 100)
 
 #### `9920060`
 
@@ -768,7 +658,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9920069](../assets/roman-maptruth-batch200/9920069.png)
 
-### Events 9920070–9920079
+### Events 9920070–9920079 (only Δχ² > 100)
 
 #### `9920070`
 
@@ -810,7 +700,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9920079](../assets/roman-maptruth-batch200/9920079.png)
 
-### Events 9920080–9920089
+### Events 9920080–9920089 (only Δχ² > 100)
 
 #### `9920080`
 
@@ -852,7 +742,7 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9920089](../assets/roman-maptruth-batch200/9920089.png)
 
-### Events 9920090–9920098
+### Events 9920090–9920098 (only Δχ² > 100)
 
 #### `9920090`
 
@@ -896,14 +786,14 @@ the adaptive FFT \(\Delta\chi^2\) map.
 The FFT scan uses the existing packed atlas and the truth-centered geometry
 mode. The SGE wrapper is invoked once for each 100-event input/truth pair:
 
-```bash
+~~~bash
 scripts/run-roman-maptruth-event-sge.sh \
   INPUT_ROOT TRUTH_CSV ATLAS PACKED_CACHE OUTPUT_ROOT TASK_ID
-```
+~~~
 
 The direct-VBM refinement and q/s plot are reproduced with:
 
-```bash
+~~~bash
 python scripts/roman-lm-refine.py \
   --input-root results/roman_local/roman_maptruth_fft_batch200_m128_16w1t/events \
   --output results/roman_local/roman_maptruth_lm_batch200 \
@@ -913,4 +803,4 @@ python scripts/plot-roman-lm-q-s.py \
   --pspl-truth results/roman_local/pspl_truth_dchi2_200_all_points.json \
   --dchi2-min 100 \
   --output assets/roman-lm-q-s-maptruth-dchi2gt100.png
-```
+~~~

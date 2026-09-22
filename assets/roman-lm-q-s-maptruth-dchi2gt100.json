@@ -2,7 +2,8 @@
   "summary": "/extern/moao38_7/nunota/hammlet/results/roman_local/roman_maptruth_lm_batch200/summary.json",
   "pspl_truth": "/extern/moao38_7/nunota/hammlet/results/roman_local/pspl_truth_dchi2_200_all_points.json",
   "dchi2_min_exclusive": 100.0,
-  "q_max": 1000.0,
+  "q_max": 1.0,
+  "q_folded_at_one": true,
   "s_limits": [
     0.01,
     100.0
