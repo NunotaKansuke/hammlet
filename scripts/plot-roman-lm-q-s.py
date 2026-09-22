@@ -38,8 +38,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--q-max",
         type=float,
-        default=1.0,
-        help="upper display limit for folded q axes (default: 1)",
+        default=1.1,
+        help="upper display limit for folded q axes (default: 1.1)",
     )
     parser.add_argument(
         "--s-min",
@@ -62,7 +62,6 @@ def main() -> int:
         raise SystemExit("--dchi2-min must be non-negative")
     if (
         args.q_max <= 0.0
-        or args.q_max > 1.0
         or args.s_min <= 0.0
         or args.s_max <= args.s_min
     ):

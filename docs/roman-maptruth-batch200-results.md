@@ -27,8 +27,9 @@ benchmark.
 ## q/s overview
 
 The q/s plot uses exactly the same 175-event strict cut. Both q values are
-folded with q → min(q, 1/q), so the q panel ends at q=1. The s panel includes
-the dotted reciprocal-degeneracy guide (s_{\rm rec}=1/s_{\rm truth}).
+folded with q → min(q, 1/q), so the data end at q=1 while the q axis has a
+small headroom to 1.1. The s panel includes the dotted reciprocal-degeneracy
+guide (s_{\rm rec}=1/s_{\rm truth}).
 
 ![Truth-centered Roman q/s recovery](../assets/roman-lm-q-s-maptruth-dchi2gt100.png)
 
