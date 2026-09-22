@@ -511,7 +511,7 @@ def _plot_lightcurve(
             fft_model,
             color="C1",
             linewidth=1.4,
-            zorder=3,
+            zorder=6,
             label=f"FFT seed (chi2={fft_profile.chi2:.1f})",
         )
         if evaluator is not None:
@@ -536,6 +536,7 @@ def _plot_lightcurve(
                 direct_model,
                 color="tab:orange",
                 linewidth=1.0,
+                zorder=7,
                 label=f"direct VBM (chi2={direct_profile.chi2:.1f})",
         )
         axis.set_ylabel("flux")

@@ -1,15 +1,16 @@
 # Roman / Hammlet truth-centered map-frame batch200 results
 
-Static result page for the 200-event Roman/Hammlet sample. Each event figure
+Static result page for the 199-event truth-centered Roman/Hammlet run. Each event figure
 shows the best truth-centered FFT seed light curve on the left and its
 corresponding \(\Delta\chi^2\) map on the right. The data points are
 drawn as dark, enlarged markers in front of the model curve.
 
 ## Run note
 
-- Event universe: `9910000`–`9910099` and `9920000`–`9920099` (200 events)
+- Event IDs shown: `9910000`–`9910099` and `9920000`–`9920098` (199 events)
+- The original 200-event universe also contained `9920099`; it is intentionally
+  omitted from this result page.
 - Truth-centered FFT + LM completed: 199 events
-- Separate validation figure: `9920099` (not included in the 199-event batch)
 - Data points per event: `23,104`
 - FFT map evaluation: `M=128`, `n_alpha=540`, radial order `1`
 - Parallelism: `16 workers × 1 thread`
@@ -889,13 +890,6 @@ the adaptive FFT \(\Delta\chi^2\) map.
 
 ![Roman truth-centered event 9920098](../assets/roman-maptruth-batch200/9920098.png)
 
-
-### Separate validation: `9920099`
-
-This event was inspected separately before the 199-event batch. Its figure
-contains the corrected map-frame FFT/LM comparison and the truth light curve.
-
-![Roman truth-centered validation event 9920099](../assets/roman-maptruth-batch200/9920099.png)
 
 ## Reproduction
 
