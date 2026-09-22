@@ -36,10 +36,16 @@ def _parse_args() -> argparse.Namespace:
         help="retain events with dchi2 strictly above this value (default: 100)",
     )
     parser.add_argument(
+        "--q-min",
+        type=float,
+        default=1.0e-5,
+        help="lower display limit for folded q axes (default: 1e-5)",
+    )
+    parser.add_argument(
         "--q-max",
         type=float,
-        default=1.1,
-        help="upper display limit for folded q axes (default: 1.1)",
+        default=1.0e1,
+        help="upper display limit for folded q axes (default: 1e1)",
     )
     parser.add_argument(
         "--s-min",
@@ -61,7 +67,8 @@ def main() -> int:
     if args.dchi2_min < 0.0:
         raise SystemExit("--dchi2-min must be non-negative")
     if (
-        args.q_max <= 0.0
+        args.q_min <= 0.0
+        or args.q_max <= args.q_min
         or args.s_min <= 0.0
         or args.s_max <= args.s_min
     ):
@@ -147,12 +154,17 @@ def main() -> int:
         edgecolors="none",
         alpha=0.85,
     )
-    axes[0].plot([1.0e-6, args.q_max], [1.0e-6, args.q_max], color="0.35", lw=1.0)
+    axes[0].plot(
+        [args.q_min, args.q_max],
+        [args.q_min, args.q_max],
+        color="0.35",
+        lw=1.0,
+    )
     axes[0].set(
         xscale="log",
         yscale="log",
-        xlim=(1.0e-6, args.q_max),
-        ylim=(1.0e-6, args.q_max),
+        xlim=(args.q_min, args.q_max),
+        ylim=(args.q_min, args.q_max),
         xlabel="truth q (folded at 1)",
         ylabel="LM-recovered q (folded at 1)",
         title=f"q ({len(rows)} events)",
@@ -212,6 +224,7 @@ def main() -> int:
                 "pspl_truth": str(args.pspl_truth.expanduser().resolve()),
                 "dchi2_min_exclusive": args.dchi2_min,
                 "q_max": args.q_max,
+                "q_limits": [args.q_min, args.q_max],
                 "q_folded_at_one": True,
                 "s_limits": [args.s_min, args.s_max],
                 "n_plotted": len(rows),
