@@ -13,6 +13,7 @@ import argparse
 from datetime import datetime, timezone
 import csv
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -44,6 +45,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=1024)
     parser.add_argument("--progress-every", type=int, default=10)
     parser.add_argument("--candidate-count", type=int, default=100)
+    parser.add_argument(
+        "--geometry-center",
+        choices=("baseline", "truth", "map-truth"),
+        default="baseline",
+        help="geometry stencil center passed to each event runner",
+    )
     parser.add_argument(
         "--event-id",
         action="append",
@@ -312,6 +319,7 @@ def _read_and_preflight_events(input_root: Path, truth_path: Path) -> list[dict[
             s = float(row["planet_s"])
             q = float(row["planet_q"])
             rho = float(row["rho"])
+            alpha = math.radians(float(row["alpha_deg"])) % (2.0 * math.pi)
             expected_points = int(row["n_points"])
         except (KeyError, TypeError, ValueError) as error:
             raise SystemExit(f"invalid truth row for event {event_id!r}") from error
@@ -323,7 +331,15 @@ def _read_and_preflight_events(input_root: Path, truth_path: Path) -> list[dict[
             u0=u0,
             tE=tE,
             data_format="time-flux-error",
-            reference=RomanReference(t0, u0, tE, s=s, q=q, rho=rho),
+            reference=RomanReference(
+                t0,
+                u0,
+                tE,
+                s=s,
+                q=q,
+                rho=rho,
+                catalog_alpha=alpha,
+            ),
             name=event_id,
         )
         actual_points = event.total_points
@@ -342,6 +358,7 @@ def _read_and_preflight_events(input_root: Path, truth_path: Path) -> list[dict[
                 "s": s,
                 "q": q,
                 "rho": rho,
+                "alpha": alpha,
                 "points": actual_points,
                 "window": [float(event.window[0]), float(event.window[1])],
                 "truth_row": row,
@@ -411,6 +428,7 @@ def _batch_config(
             "batch_size": int(args.batch_size),
             "progress_every": int(args.progress_every),
             "candidate_count": int(args.candidate_count),
+            "geometry_center": args.geometry_center,
             "tail_mode": "auto",
             "window": "all-valid-input-rows",
             "chi2_guarantee": False,
@@ -428,7 +446,7 @@ def _batch_config(
                 "window": event["window"],
                 "truth": {
                     key: event[key]
-                    for key in ("t0", "u0", "tE", "s", "q", "rho")
+                    for key in ("t0", "u0", "tE", "s", "q", "rho", "alpha")
                 },
             }
             for event in events
@@ -463,6 +481,10 @@ def _event_command(
         str(event["q"]),
         "--rho",
         str(event["rho"]),
+        "--alpha",
+        str(event["alpha"]),
+        "--geometry-center",
+        str(args.geometry_center),
         "--atlas",
         str(atlas_path),
         "--packed-cache",

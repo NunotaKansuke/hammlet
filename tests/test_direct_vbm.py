@@ -10,6 +10,10 @@ import numpy as np
 from hammlet import Dataset, Geometry, Maps, SearchConfig
 from hammlet._core.atlas import PolarAtlas
 from hammlet._core.atlas_builder import MapBuildSpec
+from hammlet._core.caustics import (
+    map_frame_pspl_parameters,
+    native_pspl_parameters_from_map,
+)
 from hammlet._core.direct_vbm import (
     DirectSpectrumConfig,
     DirectVBMPolarAtlasBuilder,
@@ -17,6 +21,7 @@ from hammlet._core.direct_vbm import (
     adaptive_ring_spectrum,
 )
 from hammlet._core.reference import direct_alpha_scan
+from hammlet._core.map_adapter import trajectory_xy
 
 
 @dataclass
@@ -120,6 +125,22 @@ def test_vbm_coordinate_frames_are_physically_equivalent(monkeypatch) -> None:
     np.testing.assert_allclose(
         native.caustic_components[0][:, 0] - shift,
         map_frame.caustic_components[0][:, 0],
+    )
+
+
+def test_map_frame_pspl_translation_matches_pointwise_trajectory() -> None:
+    time = np.linspace(-3.0, 4.0, 31)
+    t0, u0, tE, s, q, alpha = 2.3, 0.17, 4.2, 2.0, 0.5, 1.1
+    t0_map, u0_map = map_frame_pspl_parameters(t0, u0, tE, s, q, alpha)
+    native_x, native_y = trajectory_xy(time, t0, u0, tE, alpha)
+    map_x, map_y = trajectory_xy(time, t0_map, u0_map, tE, alpha)
+    shift = -(s - 1.0 / s) * q / (1.0 + q)
+
+    np.testing.assert_allclose(map_x, native_x - shift)
+    np.testing.assert_allclose(map_y, native_y)
+    np.testing.assert_allclose(
+        native_pspl_parameters_from_map(t0_map, u0_map, tE, s, q, alpha),
+        (t0, u0),
     )
 
 

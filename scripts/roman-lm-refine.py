@@ -217,14 +217,37 @@ def _initial_parameters(report: dict[str, Any]) -> tuple[dict[str, float], dict[
     geometry_index = int(best["geometry_index"])
     geometry = report["geometries"][geometry_index]
     logs, logq, logrho = (float(value) for value in best["parameters"])
+    t0_geometry = float(geometry[0])
+    u0_geometry = float(geometry[1])
+    tE = float(geometry[2])
+    alpha = float(best["alpha"])
+    geometry_frame = str(
+        report.get("geometry_frame")
+        or report.get("geometry_stencil", {}).get("geometry_frame", "native")
+    )
+    if geometry_frame not in ("native", "map"):
+        raise ValueError(f"unsupported search geometry frame: {geometry_frame!r}")
+    if geometry_frame == "map":
+        from hammlet._core.caustics import native_pspl_parameters_from_map
+
+        t0, u0 = native_pspl_parameters_from_map(
+            t0_geometry,
+            u0_geometry,
+            tE,
+            10.0**logs,
+            10.0**logq,
+            alpha,
+        )
+    else:
+        t0, u0 = t0_geometry, u0_geometry
     values = {
-        "t0": float(geometry[0]),
-        "u0": float(geometry[1]),
-        "tE": float(geometry[2]),
+        "t0": float(t0),
+        "u0": float(u0),
+        "tE": tE,
         "s": float(10.0**logs),
         "q": float(10.0**logq),
         "rho": float(10.0**logrho),
-        "alpha": float(best["alpha"]),
+        "alpha": alpha,
     }
     for name in ("tE", "s", "q", "rho"):
         if not (values[name] > 0.0):
@@ -235,6 +258,12 @@ def _initial_parameters(report: dict[str, Any]) -> tuple[dict[str, float], dict[
         "alpha_index": int(best["alpha_index"]),
         "fft_chi2": float(best["chi2"]),
         "grid_parameters": [logs, logq, logrho],
+        "geometry_frame": geometry_frame,
+        "geometry_parameters": {
+            "t0": t0_geometry,
+            "u0": u0_geometry,
+            "tE": tE,
+        },
     }
     return values, metadata
 

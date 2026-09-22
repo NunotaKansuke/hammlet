@@ -46,6 +46,8 @@ class RomanReference:
             value = getattr(self, name)
             if value is not None and (not np.isfinite(value) or value <= 0.0):
                 raise ValueError(f"reference {name} must be finite and positive")
+        if self.catalog_alpha is not None and not np.isfinite(self.catalog_alpha):
+            raise ValueError("reference catalog_alpha must be finite when provided")
 
     def as_dict(self) -> dict[str, float | None]:
         return {

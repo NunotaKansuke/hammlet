@@ -30,6 +30,59 @@ def adamgrid_map_origin_shift(separation: float, mass_ratio: float) -> float:
     return -(separation - 1.0 / separation) * mass_ratio / (1.0 + mass_ratio)
 
 
+def map_frame_pspl_parameters(
+    t0: float,
+    u0: float,
+    tE: float,
+    separation: float,
+    mass_ratio: float,
+    alpha: float,
+) -> tuple[float, float]:
+    """Express a ``trajectory_xy`` line in map-frame PSPL parameters.
+
+    ``alpha`` uses Hammlet's low-level ``trajectory_xy`` convention, for which
+    ``x = u0*sin(alpha) - tau*cos(alpha)`` and
+    ``y = -u0*cos(alpha) - tau*sin(alpha)``. The map coordinates are
+    ``(x_native - shift_x, y_native)``, so the same line has the effective
+    parameters below. The physical ``t0`` and ``u0`` are not changed.
+    """
+    t0 = float(t0)
+    u0 = float(u0)
+    tE = float(tE)
+    alpha = float(alpha)
+    if not np.all(np.isfinite((t0, u0, tE, alpha))) or tE <= 0.0:
+        raise ValueError("t0, u0, tE, and alpha must be finite; tE must be positive")
+    shift_x = adamgrid_map_origin_shift(separation, mass_ratio)
+    return (
+        t0 - shift_x * tE * float(np.cos(alpha)),
+        u0 - shift_x * float(np.sin(alpha)),
+    )
+
+
+def native_pspl_parameters_from_map(
+    t0_map: float,
+    u0_map: float,
+    tE: float,
+    separation: float,
+    mass_ratio: float,
+    alpha: float,
+) -> tuple[float, float]:
+    """Convert map-frame ``trajectory_xy`` PSPL parameters to native ones."""
+    t0_map = float(t0_map)
+    u0_map = float(u0_map)
+    tE = float(tE)
+    alpha = float(alpha)
+    if not np.all(np.isfinite((t0_map, u0_map, tE, alpha))) or tE <= 0.0:
+        raise ValueError(
+            "map t0, map u0, tE, and alpha must be finite; tE must be positive"
+        )
+    shift_x = adamgrid_map_origin_shift(separation, mass_ratio)
+    return (
+        t0_map + shift_x * tE * float(np.cos(alpha)),
+        u0_map + shift_x * float(np.sin(alpha)),
+    )
+
+
 def caustics_to_adamgrid_map_frame(
     components: Iterable[np.ndarray],
     *,

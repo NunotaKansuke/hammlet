@@ -410,6 +410,12 @@ def _plot_lightcurve(
     geometry = PSPLGeometry(
         float(center[0]), float(center[1]), float(center[2])
     )
+    geometry_frame = str(
+        report.get("geometry_frame")
+        or report.get("geometry_stencil", {}).get("geometry_frame", "native")
+    )
+    if geometry_frame not in ("native", "map"):
+        raise SystemExit(f"unsupported search geometry frame: {geometry_frame!r}")
     if time_range is None:
         rho = 10.0 ** float(parameters[best, 2])
         peak_scale = max(abs(float(geometry.u0)), rho)
@@ -490,11 +496,14 @@ def _plot_lightcurve(
             dataset.time,
             dataset.flux,
             yerr=dataset.error,
-            fmt=".",
-            ms=2.2,
-            alpha=0.35,
-            color="C0",
-            zorder=2,
+            fmt="o",
+            ms=4.0,
+            alpha=0.90,
+            color="#174a8b",
+            markeredgecolor="#174a8b",
+            markeredgewidth=0.15,
+            elinewidth=0.65,
+            zorder=5,
             label=f"{dataset.name} data",
         )
         axis.plot(
@@ -509,11 +518,14 @@ def _plot_lightcurve(
             x, y = trajectory_xy(
                 dataset.time, geometry.t0, geometry.u0, geometry.tE, alpha
             )
-            if coordinate_frame == "map":
-                x = x - adamgrid_map_origin_shift(
-                    float(10.0 ** map_parameters[0]),
-                    float(10.0 ** map_parameters[1]),
-                )
+            shift_x = adamgrid_map_origin_shift(
+                float(10.0 ** map_parameters[0]),
+                float(10.0 ** map_parameters[1]),
+            )
+            if coordinate_frame == "map" and geometry_frame == "native":
+                x = x - shift_x
+            elif coordinate_frame == "native" and geometry_frame == "map":
+                x = x + shift_x
             direct_mag = evaluator.magnification(x, y)
             direct_profile = profile_flux(direct_mag, dataset)
             direct_model = (

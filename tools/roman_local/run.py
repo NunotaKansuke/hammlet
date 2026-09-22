@@ -116,12 +116,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--s", type=float, help="optional reference separation")
     parser.add_argument("--q", type=float, help="optional reference mass ratio")
     parser.add_argument("--rho", type=float, help="optional reference source radius")
+    parser.add_argument(
+        "--alpha",
+        type=float,
+        help="optional reference alpha in radians for user-data truth geometry",
+    )
 
     parser.add_argument(
         "--geometry-center",
-        choices=("baseline", "truth"),
+        choices=("baseline", "truth", "map-truth"),
         default="baseline",
-        help="center the seed stencil on the anomaly baseline or catalog truth",
+        help=(
+            "center the seed stencil on the anomaly baseline, native truth, or "
+            "truth transformed into the atlas map frame"
+        ),
     )
     parser.add_argument(
         "--geometry-stencil",
@@ -242,9 +250,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     if args.candidate_count < 1:
         raise SystemExit("--candidate-count must be positive")
-    center = event.geometry_center
-    if args.geometry_center == "truth":
-        center = _truth_geometry(event)
+    center, center_metadata = _geometry_center(event, args.geometry_center)
     extra = None if args.no_extra_geometry else (-0.5, -0.5, 0.5)
     geometries, stencil_report = geometry_stencil(
         center,
@@ -255,6 +261,7 @@ def main(argv: list[str] | None = None) -> int:
         te_steps=args.geometry_te_steps,
         extra=extra,
     )
+    stencil_report.update(center_metadata)
     if args.tail_mode == "auto":
         required_radius = _required_radial_radius(event, geometries)
         atlas = atlas.with_point_lens_tail(
@@ -412,6 +419,7 @@ def _load_event(
             s=args.s,
             q=args.q,
             rho=args.rho,
+            catalog_alpha=args.alpha,
         )
     else:
         reference = None
@@ -518,6 +526,75 @@ def _truth_geometry(event):
     from hammlet._core.config import PSPLGeometry
 
     return PSPLGeometry(event.reference.t0, event.reference.u0, event.reference.tE)
+
+
+def _map_truth_geometry(event):
+    """Return the injected truth expressed in the atlas map frame.
+
+    ``RomanReference.catalog_alpha`` is the GULLS/native convention. The FFT
+    trajectory helper uses the equivalent line with alpha shifted by pi, so
+    the transformed geometry is computed with that search alpha.
+    """
+    import numpy as np
+
+    from hammlet._core.caustics import (
+        adamgrid_map_origin_shift,
+        map_frame_pspl_parameters,
+    )
+    from hammlet._core.config import PSPLGeometry
+
+    reference = event.reference
+    if any(
+        value is None
+        for value in (reference.s, reference.q, reference.catalog_alpha)
+    ):
+        raise ValueError(
+            "map-truth geometry requires truth s, q, and catalog alpha"
+        )
+    search_alpha = (float(reference.catalog_alpha) + np.pi) % (2.0 * np.pi)
+    t0_map, u0_map = map_frame_pspl_parameters(
+        reference.t0,
+        reference.u0,
+        reference.tE,
+        reference.s,
+        reference.q,
+        search_alpha,
+    )
+    return PSPLGeometry(t0_map, u0_map, reference.tE), {
+        "mode": "map-truth",
+        "geometry_frame": "map",
+        "native_alpha": float(reference.catalog_alpha),
+        "search_alpha": float(search_alpha),
+        "shift_x": float(
+            adamgrid_map_origin_shift(reference.s, reference.q)
+        ),
+        "native_center": {
+            "t0": float(reference.t0),
+            "u0": float(reference.u0),
+            "tE": float(reference.tE),
+        },
+        "map_center": {
+            "t0": float(t0_map),
+            "u0": float(u0_map),
+            "tE": float(reference.tE),
+        },
+    }
+
+
+def _geometry_center(event, mode: str):
+    if mode == "baseline":
+        return event.geometry_center, {
+            "mode": "baseline",
+            "geometry_frame": "native",
+        }
+    if mode == "truth":
+        return _truth_geometry(event), {
+            "mode": "truth",
+            "geometry_frame": "native",
+        }
+    if mode == "map-truth":
+        return _map_truth_geometry(event)
+    raise ValueError(f"unsupported geometry center mode: {mode!r}")
 
 
 def _geometry_array(geometries):
@@ -658,6 +735,7 @@ def _report(
         },
         "geometries": _geometry_array(geometries).tolist(),
         "geometry_stencil": stencil_report,
+        "geometry_frame": str(stencil_report.get("geometry_frame", "native")),
         "best_fft": best,
         "nearest_reference_map": nearest,
         "error_certificate": {

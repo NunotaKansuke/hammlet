@@ -55,8 +55,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--s", type=float)
     parser.add_argument("--q", type=float)
     parser.add_argument("--rho", type=float)
+    parser.add_argument("--alpha", type=float)
     parser.add_argument(
-        "--geometry-center", choices=("baseline", "truth"), default="baseline"
+        "--geometry-center",
+        choices=("baseline", "truth", "map-truth"),
+        default="baseline",
     )
     parser.add_argument(
         "--geometry-stencil", choices=("full", "te-only", "center"), default="full"
@@ -128,7 +131,7 @@ def main(argv: list[str] | None = None) -> int:
         _load_event,
         _report,
         _required_radial_radius,
-        _truth_geometry,
+        _geometry_center,
     )
 
     _validate_args(args)
@@ -161,9 +164,7 @@ def main(argv: list[str] | None = None) -> int:
 
     output = _result_path(args, event.name)
     _ensure_separate(output, source.path, packed.path)
-    center = event.geometry_center
-    if args.geometry_center == "truth":
-        center = _truth_geometry(event)
+    center, center_metadata = _geometry_center(event, args.geometry_center)
     extra = None if args.no_extra_geometry else (-0.5, -0.5, 0.5)
     geometries, stencil_report = geometry_stencil(
         center,
@@ -174,6 +175,7 @@ def main(argv: list[str] | None = None) -> int:
         te_steps=args.geometry_te_steps,
         extra=extra,
     )
+    stencil_report.update(center_metadata)
     required_radius = None
     if args.tail_mode == "auto":
         required_radius = _required_radial_radius(event, geometries)
