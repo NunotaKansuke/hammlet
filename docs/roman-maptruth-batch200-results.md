@@ -14,9 +14,16 @@ enlarged; the model curve is drawn in front.
 - `9920099` was not part of that 199-event run and is not shown here
 - Data points per event: `23,104`
 - FFT map evaluation: `M=128`, `n_alpha=540`, radial order `1`
-- Parallelism: `16 workers × 1 thread`
+- FFT parallelism in the final reports: `123` events at `16 workers × 1 thread`
+  and `76` events at `4 workers × 1 thread`; this was a resumed run, not a
+  uniform timing benchmark
+- LM parallelism: `24` event-level workers, with one BLAS/OpenMP thread per
+  worker
 - Existing packed atlas only: `33,903` readable maps out of `33,993`
 - No lens maps were regenerated and the atlas remained read-only
+
+The full artifact-level search configuration is recorded in
+[`roman-maptruth-benchmark-handoff.md`](roman-maptruth-benchmark-handoff.md).
 
 The FFT geometry grid is centered on the effective map-frame trajectory
 computed from the injected truth parameters. The physical source trajectory is
