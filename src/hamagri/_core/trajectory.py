@@ -215,37 +215,224 @@ def build_event_kernel(
     )
 
 
-def consistent_kernel_from_basis(
-    basis: TrajectoryBasis,
-    radial_nodes: np.ndarray,
-    m_max: int,
-    *,
-    radial_order: int = DEFAULT_RADIAL_ORDER,
-) -> ConsistentEventKernel:
-    """Bind a node-independent trajectory basis to one atlas radial grid."""
-    radial_order = validate_radial_order(radial_order)
-    m_max = int(m_max)
-    if m_max < 0:
-        raise ValueError("m_max must be nonnegative")
-    if 2 * m_max > basis.max_mode:
-        raise ValueError(
-            "trajectory basis was built for a smaller m_max than requested"
-        )
-    nodes = np.asarray(radial_nodes, dtype=np.float64)
-    n_node = nodes.size
-    indices, stencil = radial_stencil(basis.radius, nodes, radial_order)
-    width = indices.shape[1]
+DEFAULT_MOMENT_GROUP_SIZE = 32
 
-    linear_angular = basis.angular[:, : m_max + 1]
-    square_angular = basis.angular[:, : 2 * m_max + 1]
+
+@dataclass(frozen=True)
+class GroupedMoments:
+    """Radial moments of consecutive observation groups, for linear stencils.
+
+    With ``radial_order=1`` every stencil weight is affine in the radius inside
+    one radial cell, so the contribution of a group of observations that all
+    fall in the same cell depends on them only through ``sum w x**k A`` for
+    ``k = 0, 1, 2``, with ``x`` the radius offset from the group centre.  Those
+    moments do not depend on the atlas nodes and are built once per basis.
+    Binding a bucket then touches one moment row per interior group plus the raw
+    rows of the few groups that straddle a cell boundary, instead of every
+    observation.
+
+    Moments are taken about each group's own centre rather than as global prefix
+    sums: atlas cells are up to thousands of times narrower than their radius,
+    and differencing cumulative sums would cancel most of the significant
+    digits.  Here every recombination coefficient is of order one.
+    """
+
+    starts: np.ndarray
+    ends: np.ndarray
+    centers: np.ndarray
+    # (3 * n_group, 2 * M + 1): sum w A, sum w x A, sum w x**2 A, group-major blocks.
+    square: np.ndarray
+    # (4 * n_group, M + 1): sum w A, sum w x A, sum wf A, sum wf x A.
+    linear: np.ndarray
+
+    @property
+    def n_group(self) -> int:
+        return int(self.starts.size)
+
+    @property
+    def max_mode(self) -> int:
+        return int(self.square.shape[1]) - 1
+
+
+def build_grouped_moments(
+    basis: TrajectoryBasis, group_size: int = DEFAULT_MOMENT_GROUP_SIZE
+) -> GroupedMoments:
+    from scipy import sparse
+
+    group_size = int(group_size)
+    if group_size < 1:
+        raise ValueError("group_size must be positive")
+    n_observation = basis.radius.size
+    starts = np.arange(0, n_observation, group_size, dtype=np.int64)
+    ends = np.minimum(starts + group_size, n_observation)
+    n_group = starts.size
+    centers = 0.5 * (basis.radius[starts] + basis.radius[ends - 1])
+    group = np.repeat(np.arange(n_group, dtype=np.int64), ends - starts)
+    offset = basis.radius - centers[group]
+    columns = np.arange(n_observation, dtype=np.int64)
+
+    def moments(values: list[np.ndarray], angular: np.ndarray) -> np.ndarray:
+        rows = np.concatenate([group + k * n_group for k in range(len(values))])
+        operator = sparse.csr_matrix(
+            (
+                np.concatenate(values),
+                (rows, np.tile(columns, len(values))),
+            ),
+            shape=(len(values) * n_group, n_observation),
+        )
+        real = np.ascontiguousarray(angular).view(np.float64)
+        return np.ascontiguousarray(
+            np.asarray(operator @ real)
+        ).view(np.complex128)
+
+    weight = basis.weight
+    weighted_flux = basis.weighted_flux_values
+    square = moments(
+        [weight, weight * offset, weight * offset**2], basis.angular
+    )
+    linear = moments(
+        [weight, weight * offset, weighted_flux, weighted_flux * offset],
+        basis.angular[:, : basis.max_mode // 2 + 1],
+    )
+    return GroupedMoments(
+        starts=starts, ends=ends, centers=centers, square=square, linear=linear
+    )
+
+
+def _grouped_angular_terms(
+    basis: TrajectoryBasis,
+    moments: GroupedMoments,
+    nodes: np.ndarray,
+    indices: np.ndarray,
+    stencil: np.ndarray,
+    m_max: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    from scipy import sparse
+
+    n_node = nodes.size
+    n_group = moments.n_group
+    lower = indices[:, 0]
+    first = moments.starts
+    last = moments.ends - 1
+    # Clipped radii are not affine in the raw radius, so a group touching the
+    # clipped range is also handled observation by observation.
+    interior = (
+        (lower[first] == lower[last])
+        & (basis.radius[first] >= nodes[0])
+        & (basis.radius[last] <= nodes[-1])
+    )
+    raw = np.repeat(~interior, moments.ends - moments.starts)
+    weighted, weighted_flux, lags = _stencil_angular_terms(
+        n_node,
+        indices[raw],
+        stencil[raw],
+        basis.weight[raw],
+        basis.weighted_flux_values[raw],
+        basis.angular[raw, : 2 * m_max + 1],
+        m_max,
+        1,
+    )
+
+    group = np.flatnonzero(interior)
+    if group.size == 0:
+        return weighted, weighted_flux, lags
+    cell = lower[first[group]]
+    inverse_width = 1.0 / (nodes[cell + 1] - nodes[cell])
+    a = (moments.centers[group] - nodes[cell]) * inverse_width
+    b = inverse_width
+    upper = cell + 1
+
+    def apply(
+        n_row: int,
+        entries: list[tuple[np.ndarray, int, np.ndarray]],
+        dense: np.ndarray,
+        n_mode: int,
+    ) -> np.ndarray:
+        rows = np.concatenate([row for row, _, _ in entries])
+        cols = np.concatenate(
+            [np.full(group.size, block * n_group) + group for _, block, _ in entries]
+        )
+        data = np.concatenate([value for _, _, value in entries])
+        operator = sparse.csr_matrix(
+            (data, (rows, cols)), shape=(n_row, dense.shape[0])
+        )
+        if dense.shape[1] != n_mode:
+            dense = np.ascontiguousarray(dense[:, :n_mode])
+        product = operator @ dense.view(np.float64)
+        return np.asarray(product).view(np.complex128)
+
+    # Linear weights: 1 - f at the lower node and f at the upper node, with
+    # f = a + b x.  Rows [0, n_node) are weighted, [n_node, 2 n_node) are flux.
+    linear = apply(
+        2 * n_node,
+        [
+            (cell, 0, 1.0 - a),
+            (cell, 1, -b),
+            (upper, 0, a),
+            (upper, 1, b),
+            (cell + n_node, 2, 1.0 - a),
+            (cell + n_node, 3, -b),
+            (upper + n_node, 2, a),
+            (upper + n_node, 3, b),
+        ],
+        moments.linear,
+        m_max + 1,
+    )
+    weighted += linear[:n_node]
+    weighted_flux += linear[n_node:]
+
+    # Square weights: (1 - f)**2 and f**2 on lag 0, 2 f (1 - f) on lag 1.
+    one_minus = 1.0 - a
+    square = apply(
+        2 * n_node,
+        [
+            (cell, 0, one_minus * one_minus),
+            (cell, 1, -2.0 * one_minus * b),
+            (cell, 2, b * b),
+            (upper, 0, a * a),
+            (upper, 1, 2.0 * a * b),
+            (upper, 2, b * b),
+            (cell + n_node, 0, 2.0 * a * one_minus),
+            (cell + n_node, 1, 2.0 * b * (one_minus - a)),
+            (cell + n_node, 2, -2.0 * b * b),
+        ],
+        moments.square,
+        2 * m_max + 1,
+    )
+    lags[0] += square[:n_node]
+    lags[1] += square[n_node:]
+    return weighted, weighted_flux, lags
+
+
+def _stencil_angular_terms(
+    n_node: int,
+    indices: np.ndarray,
+    stencil: np.ndarray,
+    weight: np.ndarray,
+    weighted_flux_values: np.ndarray,
+    angular: np.ndarray,
+    m_max: int,
+    radial_order: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Accumulate the linear and square angular moments observation by observation."""
+    width = indices.shape[1]
+    n_observation = indices.shape[0]
+    linear_angular = angular[:, : m_max + 1]
+    square_angular = angular[:, : 2 * m_max + 1]
+    if n_observation == 0:
+        return (
+            np.zeros((n_node, m_max + 1), dtype=np.complex128),
+            np.zeros((n_node, m_max + 1), dtype=np.complex128),
+            np.zeros((radial_order + 1, n_node, 2 * m_max + 1), dtype=np.complex128),
+        )
 
     # Both linear moments read the same stencil, so they go through one sparse
     # operator with the stencil columns listed twice.
-    scale = basis.weight[:, None] * stencil
+    scale = weight[:, None] * stencil
     linear_terms = segmented_angular_sums(
         n_node,
         np.hstack((indices, indices)),
-        np.hstack((scale, basis.weighted_flux_values[:, None] * stencil)),
+        np.hstack((scale, weighted_flux_values[:, None] * stencil)),
         linear_angular,
     )
     weighted = linear_terms[:width].sum(axis=0)
@@ -259,14 +446,14 @@ def consistent_kernel_from_basis(
         for lag in range(radial_order + 1)
         for column in range(width - lag)
     ]
-    square_indices = np.empty((basis.radius.size, len(pairs)), dtype=indices.dtype)
-    square_weights = np.empty((basis.radius.size, len(pairs)), dtype=np.float64)
+    square_indices = np.empty((n_observation, len(pairs)), dtype=indices.dtype)
+    square_weights = np.empty((n_observation, len(pairs)), dtype=np.float64)
     for term, (lag, column) in enumerate(pairs):
         partner = column + lag
         if indices[0, partner] - indices[0, column] != lag:
             raise RuntimeError("radial stencil indices are not consecutive")
         square_indices[:, term] = indices[:, column]
-        pair_weight = basis.weight * stencil[:, column] * stencil[:, partner]
+        pair_weight = weight * stencil[:, column] * stencil[:, partner]
         # (a, b) and (b, a) are the same product coefficient.
         square_weights[:, term] = 2.0 * pair_weight if lag else pair_weight
     square_terms = segmented_angular_sums(
@@ -284,6 +471,53 @@ def consistent_kernel_from_basis(
         if lag:
             # Node ``n_node - lag`` and beyond have no partner to pair with.
             lags[lag, n_node - lag :] = 0.0
+    return weighted, weighted_flux, lags
+
+
+def consistent_kernel_from_basis(
+    basis: TrajectoryBasis,
+    radial_nodes: np.ndarray,
+    m_max: int,
+    *,
+    radial_order: int = DEFAULT_RADIAL_ORDER,
+    moments: "GroupedMoments | None" = None,
+) -> ConsistentEventKernel:
+    """Bind a node-independent trajectory basis to one atlas radial grid.
+
+    ``moments`` (linear radial order only) lets whole groups of observations
+    that fall inside one radial cell be reduced from precomputed moments; the
+    result is the same sum, evaluated with far less memory traffic.
+    """
+    radial_order = validate_radial_order(radial_order)
+    m_max = int(m_max)
+    if m_max < 0:
+        raise ValueError("m_max must be nonnegative")
+    if 2 * m_max > basis.max_mode:
+        raise ValueError(
+            "trajectory basis was built for a smaller m_max than requested"
+        )
+    nodes = np.asarray(radial_nodes, dtype=np.float64)
+    n_node = nodes.size
+    indices, stencil = radial_stencil(basis.radius, nodes, radial_order)
+    width = indices.shape[1]
+
+    if moments is not None and radial_order == 1:
+        if moments.max_mode < 2 * m_max:
+            raise ValueError("grouped moments were built for a smaller m_max")
+        weighted, weighted_flux, lags = _grouped_angular_terms(
+            basis, moments, nodes, indices, stencil, m_max
+        )
+    else:
+        weighted, weighted_flux, lags = _stencil_angular_terms(
+            n_node,
+            indices,
+            stencil,
+            basis.weight,
+            basis.weighted_flux_values,
+            basis.angular[:, : 2 * m_max + 1],
+            m_max,
+            radial_order,
+        )
 
     # If a stored node has magnification uncertainty e_r, the interpolated
     # uncertainty is at most sum_r |a_r| e_r.  These moments let the scanner
@@ -368,6 +602,7 @@ class ConsistentKernelFactory:
         max_m_max: int,
         *,
         radial_order: int = DEFAULT_RADIAL_ORDER,
+        moment_group_size: int | None = DEFAULT_MOMENT_GROUP_SIZE,
     ) -> None:
         datasets = list(datasets)
         geometries = list(geometries)
@@ -387,6 +622,15 @@ class ConsistentKernelFactory:
             ]
             for geometry in geometries
         ]
+        # Grouped moments only apply to linear stencils; ``None`` disables them.
+        self._moments = (
+            [
+                [build_grouped_moments(basis, moment_group_size) for basis in row]
+                for row in self._bases
+            ]
+            if moment_group_size is not None and self.radial_order == 1
+            else None
+        )
         self.basis_seconds = time.perf_counter() - started
 
     def __call__(
@@ -405,14 +649,19 @@ class ConsistentKernelFactory:
             else validate_radial_order(radial_order)
         )
         started = time.perf_counter()
+        moments = self._moments if order == 1 else None
         batches = [
             [
                 consistent_kernel_from_basis(
-                    basis, radial_nodes, m_max, radial_order=order
+                    basis,
+                    radial_nodes,
+                    m_max,
+                    radial_order=order,
+                    moments=None if moments is None else moments[g][d],
                 )
-                for basis in geometry_bases
+                for d, basis in enumerate(geometry_bases)
             ]
-            for geometry_bases in self._bases
+            for g, geometry_bases in enumerate(self._bases)
         ]
         self.build_seconds += time.perf_counter() - started
         self.call_count += 1
