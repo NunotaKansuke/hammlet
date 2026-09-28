@@ -136,30 +136,20 @@ def _markdown(rows: list[dict], threshold: float, output_root: Path) -> str:
         "The normal FFT seed is dashed gray and the ordinary LM-polished model is",
         "solid orange. No fallback result or truth parameter is used as a fit.",
         "",
-        "| rank | event | chi2/dof | true s | true q | figures |",
-        "|---:|---:|---:|---:|---:|:---|",
     ]
     for rank, row in enumerate(rows, 1):
         event_id = row["event_id"]
-        full = f"[{event_id} full](./{event_id}-full.png)"
-        zoom = f"[zoom + caustics](./{event_id}-zoom.png)"
         lines.append(
-            f"| {rank} | `{event_id}` | {row['chi2_dof']:.4f} | "
-            f"{row['s_true']:.5g} | {row['q_true']:.5g} | {full} · {zoom} |"
+            f"## {rank}. `{event_id}` — `chi2/dof = {row['chi2_dof']:.4f}`"
         )
-    lines.extend(["", "## Figures", ""])
-    for rank, row in enumerate(rows, 1):
-        event_id = row["event_id"]
         lines.extend(
             [
-                f"<details><summary>{rank}. <code>{event_id}</code> "
-                f"(chi2/dof = {row['chi2_dof']:.4f})</summary>",
+                f"truth: `s={row['s_true']:.5g}`, `q={row['q_true']:.5g}`",
                 "",
-                f"![{event_id} full figure](./{event_id}-full.png)",
-                "",
-                f"![{event_id} zoom and caustics](./{event_id}-zoom.png)",
-                "",
-                "</details>",
+                "<p>",
+                f'<img src="./{event_id}-full.png" alt="{event_id} full figure" width="49%">',
+                f'<img src="./{event_id}-zoom.png" alt="{event_id} zoom and caustics" width="49%">',
+                "</p>",
                 "",
             ]
         )
