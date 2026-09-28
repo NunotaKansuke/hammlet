@@ -1,0 +1,375 @@
+{
+  "threshold": 1.1,
+  "event_count": 41,
+  "events": [
+    {
+      "event_id": "9920069",
+      "chi2_dof": 1569.5177605818183,
+      "s_true": 1.8088374771988778,
+      "q_true": 0.014858568900647587,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920069-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920069-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920081",
+      "chi2_dof": 1502.4531020270265,
+      "s_true": 2.291647803658784,
+      "q_true": 0.11333040298429133,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920081-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920081-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920070",
+      "chi2_dof": 1367.0861557858834,
+      "s_true": 1.8981071253675998,
+      "q_true": 0.2361271062007994,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920070-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920070-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920092",
+      "chi2_dof": 1133.2977387416008,
+      "s_true": 2.7601235577556675,
+      "q_true": 0.7688636074164829,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920092-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920092-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920079",
+      "chi2_dof": 1065.0960609747708,
+      "s_true": 2.1983689950070144,
+      "q_true": 0.8822433941014757,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920079-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920079-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920039",
+      "chi2_dof": 991.9627223674435,
+      "s_true": 0.6979605441836348,
+      "q_true": 0.8413721614482726,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920039-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920039-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920080",
+      "chi2_dof": 774.3634426430555,
+      "s_true": 2.2333573474153217,
+      "q_true": 0.021600614047207995,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920080-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920080-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920087",
+      "chi2_dof": 659.612812969951,
+      "s_true": 2.604101591723553,
+      "q_true": 0.023379499129497702,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920087-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920087-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920062",
+      "chi2_dof": 446.2594758546013,
+      "s_true": 1.522852288284193,
+      "q_true": 0.7906789865676331,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920062-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920062-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920097",
+      "chi2_dof": 410.1927752963202,
+      "s_true": 2.951420314077744,
+      "q_true": 0.36839963758252803,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920097-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920097-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920083",
+      "chi2_dof": 353.59474161704054,
+      "s_true": 2.3642264604695256,
+      "q_true": 0.7146525178220526,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920083-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920083-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920075",
+      "chi2_dof": 255.85428870376558,
+      "s_true": 2.0370552414673258,
+      "q_true": 0.012511440272310255,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920075-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920075-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920095",
+      "chi2_dof": 226.82466399517668,
+      "s_true": 2.850650523292208,
+      "q_true": 0.04870424941947484,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920095-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920095-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9910073",
+      "chi2_dof": 194.50538464410494,
+      "s_true": 1.2,
+      "q_true": 0.01,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910073-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910073-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920099",
+      "chi2_dof": 193.15765990876548,
+      "s_true": 2.99221427949275,
+      "q_true": 0.862431835458119,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920099-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920099-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9910063",
+      "chi2_dof": 117.2993354851734,
+      "s_true": 0.92,
+      "q_true": 0.01,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910063-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910063-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920074",
+      "chi2_dof": 115.21365188867354,
+      "s_true": 2.026377967678975,
+      "q_true": 0.009860716620632934,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920074-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920074-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920061",
+      "chi2_dof": 64.46190483797608,
+      "s_true": 1.3665914155458174,
+      "q_true": 0.0021524314454886453,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920061-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920061-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920076",
+      "chi2_dof": 53.27261283693956,
+      "s_true": 2.088424989246872,
+      "q_true": 0.05250179077118691,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920076-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920076-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920050",
+      "chi2_dof": 28.573478242152973,
+      "s_true": 1.059912561068294,
+      "q_true": 0.01567011480299054,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920050-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920050-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920072",
+      "chi2_dof": 27.522308869592507,
+      "s_true": 1.9690786505616054,
+      "q_true": 0.0018749527170366209,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920072-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920072-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920007",
+      "chi2_dof": 19.984689589589316,
+      "s_true": 0.3663462572997971,
+      "q_true": 0.9042692093791702,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920007-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920007-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920049",
+      "chi2_dof": 19.702466946999685,
+      "s_true": 1.034748530960891,
+      "q_true": 0.0032963566554998366,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920049-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920049-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920044",
+      "chi2_dof": 10.963691239973546,
+      "s_true": 0.8227258235875217,
+      "q_true": 0.758792402263438,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920044-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920044-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9910043",
+      "chi2_dof": 9.7007733527908,
+      "s_true": 1.1990068207120235,
+      "q_true": 0.003,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910043-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910043-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920017",
+      "chi2_dof": 9.393385094628993,
+      "s_true": 0.4341890305529906,
+      "q_true": 0.22096404737792502,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920017-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920017-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920098",
+      "chi2_dof": 6.979603242059101,
+      "s_true": 2.977401162468985,
+      "q_true": 0.6329802670832161,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920098-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920098-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9910094",
+      "chi2_dof": 5.16098989779391,
+      "s_true": 1.2697553178578882,
+      "q_true": 0.001,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910094-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910094-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920003",
+      "chi2_dof": 3.3707989553147315,
+      "s_true": 0.33657021334797366,
+      "q_true": 0.019899795621523712,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920003-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920003-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920088",
+      "chi2_dof": 3.3451429785308417,
+      "s_true": 2.6441453763925105,
+      "q_true": 0.05984444898738531,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920088-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920088-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920021",
+      "chi2_dof": 2.2592123809193203,
+      "s_true": 0.458940364421987,
+      "q_true": 0.0031444555837986336,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920021-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920021-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920004",
+      "chi2_dof": 1.8003738753664618,
+      "s_true": 0.34376694948345327,
+      "q_true": 0.04876791279569953,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920004-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920004-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920006",
+      "chi2_dof": 1.5784353014177548,
+      "s_true": 0.3648073530202376,
+      "q_true": 0.7956167815594062,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920006-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920006-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9910011",
+      "chi2_dof": 1.512216476964937,
+      "s_true": 1.02,
+      "q_true": 0.001,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910011-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910011-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9910036",
+      "chi2_dof": 1.2757116552996508,
+      "s_true": 0.8256833763565201,
+      "q_true": 0.003,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910036-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910036-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920027",
+      "chi2_dof": 1.2723259059928336,
+      "s_true": 0.544567080076992,
+      "q_true": 0.15477415459489377,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920027-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920027-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920029",
+      "chi2_dof": 1.2616065749567007,
+      "s_true": 0.5557738363161804,
+      "q_true": 0.5100389195891946,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920029-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920029-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9920089",
+      "chi2_dof": 1.1760381594512315,
+      "s_true": 2.6727839692607853,
+      "q_true": 0.10625877764478844,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920089-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9920089-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9910099",
+      "chi2_dof": 1.1646695187227223,
+      "s_true": 0.8380590439076687,
+      "q_true": 0.001,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910099-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910099-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9910082",
+      "chi2_dof": 1.1567972290893636,
+      "s_true": 1.0562103510663305,
+      "q_true": 0.003,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910082-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910082-zoom.png",
+      "status": "cached"
+    },
+    {
+      "event_id": "9910069",
+      "chi2_dof": 1.152450661387008,
+      "s_true": 0.72,
+      "q_true": 0.0003,
+      "full_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910069-full.png",
+      "zoom_output": "/extern/moao38_7/nunota/hammlet/assets/roman-failure-events-chi2gt1p1/9910069-zoom.png",
+      "status": "cached"
+    }
+  ]
+}
