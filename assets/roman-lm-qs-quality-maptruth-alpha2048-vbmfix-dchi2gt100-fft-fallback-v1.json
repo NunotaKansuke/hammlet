@@ -1,0 +1,30 @@
+{
+  "figure": "/extern/moao38_7/nunota/hammlet/assets/roman-lm-qs-quality-maptruth-alpha2048-vbmfix-dchi2gt100-fft-fallback-v1.png",
+  "extra_event_files": [],
+  "gulls_root": "/extern/rogue1_8/nunota/gulls/runs/examples",
+  "gulls_dataset_suffix": "_vbmfix",
+  "n_events": 45,
+  "selection": {
+    "pspl_truth": "/extern/moao38_7/nunota/hammlet/results/roman_local/pspl_truth_dchi2_200_all_points_vbmfix.json",
+    "dchi2_min_exclusive": 100.0,
+    "n_input_events": 45,
+    "n_plotted": 45,
+    "skipped": {
+      "missing_pspl": 0,
+      "below_cut": 0
+    }
+  },
+  "colour": "recovered_chi2_dof",
+  "colour_vmax_percentile": 95.0,
+  "colour_vmax": 9.87101404722033,
+  "q_limits": [
+    1e-05,
+    10.0
+  ],
+  "q_folded_at_one": true,
+  "s_limits": [
+    0.1,
+    10.0
+  ],
+  "inverse_s_line": true
+}
