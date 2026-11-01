@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .radial import validate_radial_order
+from .radial import inverse_point_lens_excess, validate_radial_order
 
 
 def fourier_series_tail_bound(
@@ -203,11 +203,16 @@ def radial_piecewise_linear_residual_bound(
     """Bound radial interpolation against a sampled piecewise-linear reference.
 
     ``reference_nodes`` must include every stored node and may add nested direct
-    VBM holdout rings. Between consecutive reference rings the declared
-    coefficient reference is linear. The runtime Lagrange interpolant is a
-    polynomial, so on each subinterval its residual is bounded by its endpoint
-    residual plus ``h**2/8`` times a computable second-derivative bound. The
-    returned value is one angular-series L-infinity envelope per stored cell.
+    VBM holdout rings. The runtime interpolant is ``g(r)`` times a polynomial
+    through the stored ratios ``(A - 1) / g`` (see ``radial.point_lens_scale``),
+    so the declared reference is the same: its ratio is linear between
+    consecutive reference rings.  On each subinterval ``[L, R]`` the ratio
+    residual is then linear between its endpoint values plus a polynomial
+    deviation of at most ``(r - L)(R - r)/2`` times a second-derivative bound.
+    Since ``g`` and ``r g`` both decrease, ``g(r) <= g(L)`` and
+    ``(r - L) g(r) <= L g(L)`` (which is 1 at ``L = 0``) turn those into
+    excess bounds that stay finite at the origin.  The returned value is one
+    angular-series L-infinity envelope per stored cell.
 
     ``reference_error`` is the angular certificate at each reference ring. It
     is interpolated convexly between rings and therefore enters through the
@@ -258,7 +263,10 @@ def radial_piecewise_linear_residual_bound(
             raise RuntimeError("stored radial cell has no reference segment")
         stencil_indices = _radial_stencil_indices(cell, len(nodes), order)
         stencil_nodes = nodes[stencil_indices]
-        stencil_coefficients = stored[stencil_indices]
+        stencil_coefficients = (
+            stored[stencil_indices]
+            * inverse_point_lens_excess(stencil_nodes)[:, None]
+        )
         bound = 0.0
         for segment in range(left_position, right_position):
             left = float(radii[segment])
@@ -267,9 +275,23 @@ def radial_piecewise_linear_residual_bound(
             right_value = (
                 _lagrange_weights(stencil_nodes, right) @ stencil_coefficients
             )
-            endpoint = np.maximum(
-                np.abs(reference[segment] - left_value),
-                np.abs(reference[segment + 1] - right_value),
+            left_residual = np.abs(
+                reference[segment] * inverse_point_lens_excess(left) - left_value
+            )
+            right_residual = np.abs(
+                reference[segment + 1] * inverse_point_lens_excess(right)
+                - right_value
+            )
+            left_excess, left_radius_excess = _point_lens_excess_bounds(left)
+            span = right - left
+            # g(L) is infinite at L = 0, where the ratio residual is exactly 0.
+            left_term = (
+                left_residual * left_excess
+                if np.isfinite(left_excess)
+                else np.where(left_residual > 0.0, np.inf, 0.0)
+            )
+            endpoint = left_term + right_residual * min(
+                left_excess, left_radius_excess / span
             )
             if order == 3:
                 second_left = (
@@ -281,7 +303,9 @@ def radial_piecewise_linear_residual_bound(
                     @ stencil_coefficients
                 )
                 second = np.maximum(np.abs(second_left), np.abs(second_right))
-                endpoint = endpoint + (right - left) ** 2 * second / 8.0
+                endpoint = endpoint + second * min(
+                    left_excess * span**2 / 8.0, left_radius_excess * span / 2.0
+                )
             coefficient_bound = float(np.dot(mode_weight, endpoint))
             local = coefficient_bound + max(
                 float(angular_error[segment]),
@@ -292,16 +316,33 @@ def radial_piecewise_linear_residual_bound(
     return output
 
 
+def _point_lens_excess_bounds(radius: float) -> tuple[float, float]:
+    """Return ``(g(r), r g(r))`` for ``g = A_PL - 1``; ``(inf, 1)`` at zero."""
+    if radius <= 0.0:
+        return np.inf, 1.0
+    root = np.sqrt(radius * radius + 4.0)
+    radius_excess = 4.0 / (root * (radius * radius + 2.0 + radius * root))
+    return radius_excess / radius, radius_excess
+
+
 def radial_interval_to_node_envelope(
-    interval_bound: np.ndarray, *, order: int
+    interval_bound: np.ndarray, radial_nodes: np.ndarray, *, order: int
 ) -> np.ndarray:
     """Encode interval bounds as node errors for the existing fast propagator.
 
-    Every node read by an interval's runtime stencil receives at least that
-    interval's bound. Since Lagrange weights sum to one, the absolute-weight
-    propagation is then no smaller than the interval bound, including for
-    cubic stencils with negative weights.
+    Every node ``k`` read by an interval's runtime stencil receives at least
+    that interval's bound times ``g(r_k) / g(R)``, with ``R`` the interval's
+    upper end.  The runtime weights are Lagrange weights, which sum to one,
+    times ``g(r) / g(r_k)``, and ``g(r) >= g(R)`` inside the interval, so the
+    absolute-weight propagation is no smaller than the interval bound,
+    including for cubic stencils with negative weights.  A node at ``r = 0``
+    carries zero weight except at ``r = 0`` itself, where it is read plainly,
+    so it receives the bound unscaled; the remaining weights of such a stencil
+    still sum to at least ``r / r_1`` in the first cell and 1 beyond it, and
+    ``r g(r) >= r_1 g(r_1)`` covers the first cell.
     """
+    nodes = np.asarray(radial_nodes, dtype=np.float64)
+    inverse = inverse_point_lens_excess(nodes)
     intervals = np.asarray(interval_bound, dtype=np.float64)
     order = validate_radial_order(order)
     if (
@@ -312,10 +353,18 @@ def radial_interval_to_node_envelope(
     ):
         raise ValueError("interval_bound must be a finite non-negative vector")
     n_node = len(intervals) + 1
+    if nodes.shape != (n_node,):
+        raise ValueError("radial_nodes must have one more entry than interval_bound")
     output = np.zeros(n_node, dtype=np.float64)
     for cell, value in enumerate(intervals):
         indices = _radial_stencil_indices(cell, n_node, order)
-        output[indices] = np.maximum(output[indices], value)
+        ratio = np.divide(
+            inverse[cell + 1],
+            inverse[indices],
+            out=np.ones(len(indices)),
+            where=inverse[indices] > 0.0,
+        )
+        output[indices] = np.maximum(output[indices], value * ratio)
     return output
 
 

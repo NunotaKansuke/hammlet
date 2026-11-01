@@ -10,10 +10,11 @@ from hamagri._core.atlas_builder import MapBuildSpec, PolarAtlasBuilder
 @dataclass
 class ToyEvaluator:
     amplitude: float
+    width: float = 2.0
 
     def magnification(self, x, y):
         radius2 = x * x + y * y
-        return 1.0 + self.amplitude * np.exp(-2.0 * radius2) * (
+        return 1.0 + self.amplitude * np.exp(-self.width * radius2) * (
             1.0 + 0.15 * np.cos(2.0 * np.arctan2(y, x))
         )
 
@@ -24,7 +25,11 @@ def toy_maps(path):
         nodes, n_phi_build=32, m_max=3, core_m_max=1, shard_size=2
     )
     specs = [
-        MapBuildSpec(i, 0.0, -3.0 + i, -3.0, ToyEvaluator(0.2 + 0.1 * i))
+        # An amplitude alone is absorbed by the source flux, so the maps also
+        # differ in width and the true map is identifiable.
+        MapBuildSpec(
+            i, 0.0, -3.0 + i, -3.0, ToyEvaluator(0.2 + 0.1 * i, 1.0 + i)
+        )
         for i in range(3)
     ]
     builder.build(path, specs)

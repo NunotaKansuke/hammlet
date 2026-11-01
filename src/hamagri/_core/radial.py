@@ -13,6 +13,16 @@ which removes most of the residual chi-square discrepancy against direct
 stencils were measured to be worse: node spacing near a caustic is comparable
 to the source radius, so a higher-degree polynomial rings instead of
 converging.
+
+Every scheme interpolates the stored excess ``A - 1`` relative to the point
+lens: the polynomial runs through ``(A - 1) / g`` at the nodes and the result
+is multiplied by ``g`` at the observation, with ``g(r) = A_PL(r) - 1``.  A
+binary map's excess follows the point-lens ``1 / r`` cusp near the centre, and
+the atlas nodes there are spaced by a sizeable fraction of their radius, so
+interpolating the excess itself overshoots by several percent at high
+magnification.  The ratio is smooth across the cusp, and the factor is still a
+fixed weight per (observation, node) pair, so the search kernels keep their
+map-independent form.
 """
 
 from __future__ import annotations
@@ -35,6 +45,31 @@ def validate_radial_order(order: int) -> int:
 def stencil_width(order: int) -> int:
     """Number of radial nodes each observation reads."""
     return validate_radial_order(order) + 1
+
+
+def inverse_point_lens_excess(radius: np.ndarray) -> np.ndarray:
+    """Return ``1 / (A_PL(r) - 1)``, which is finite and zero at ``r = 0``.
+
+    ``A_PL - 1 = 4 / (r q (r**2 + 2 + r q))`` with ``q = sqrt(r**2 + 4)``,
+    written without the cancellation of the textbook form at large radius.
+    """
+    radius = np.asarray(radius, dtype=np.float64)
+    root = radius * np.sqrt(radius * radius + 4.0)
+    return 0.25 * root * (radius * radius + 2.0 + root)
+
+
+def point_lens_scale(
+    radius: np.ndarray, node_radius: np.ndarray
+) -> np.ndarray:
+    """Factor ``g(r) / g(r_k)`` that turns a ratio stencil into excess weights.
+
+    ``radius`` broadcasts against ``node_radius``.  An observation exactly at
+    ``r = 0`` (only reachable on a node at zero) keeps its plain weights.
+    """
+    observation = inverse_point_lens_excess(radius)
+    node = inverse_point_lens_excess(node_radius)
+    safe = np.where(observation > 0.0, observation, 1.0)
+    return np.where(observation > 0.0, node / safe, 1.0)
 
 
 def clip_to_radial_range(
@@ -65,11 +100,24 @@ def radial_stencil(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return ``(indices, weights)`` of shape ``(n_observation, order + 1)``.
 
-    The weights are the Lagrange basis of the selected nodes, so they sum to one
-    and reproduce polynomials up to ``order`` exactly.  Near either end of the
-    node array the stencil is shifted inward rather than reduced in order, which
-    keeps a single dense shape for the batched kernels.
+    The weights are the Lagrange basis of the selected nodes times
+    ``point_lens_scale``, so they reproduce ``g(r)`` times any polynomial up to
+    ``order`` exactly, and in particular the point lens itself.  Near either end
+    of the node array the stencil is shifted inward rather than reduced in
+    order, which keeps a single dense shape for the batched kernels.
     """
+    indices, weights = lagrange_stencil(radius, radial_nodes, order)
+    radius = clip_to_radial_range(radius, radial_nodes)
+    nodes = np.asarray(radial_nodes, dtype=np.float64)
+    return indices, weights * point_lens_scale(radius[:, None], nodes[indices])
+
+
+def lagrange_stencil(
+    radius: np.ndarray,
+    radial_nodes: np.ndarray,
+    order: int = DEFAULT_RADIAL_ORDER,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Plain Lagrange stencil: weights sum to one, no point-lens factor."""
     order = validate_radial_order(order)
     width = order + 1
     nodes = np.asarray(radial_nodes, dtype=np.float64)

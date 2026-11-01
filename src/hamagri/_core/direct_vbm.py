@@ -646,7 +646,7 @@ class DirectVBMPolarAtlasBuilder(PolarAtlasBuilder):
                 order=order,
             )
             by_order[order] = radial_interval_to_node_envelope(
-                interval_bound, order=order
+                interval_bound, self.radial_nodes, order=order
             )
         return np.maximum.reduce(list(by_order.values())), by_order
 

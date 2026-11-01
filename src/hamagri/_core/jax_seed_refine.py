@@ -126,16 +126,35 @@ class JAXFixedAlphaBatchEvaluator:
         )(radial_nodes, radius)
         upper = jnp.clip(upper, 1, radial_nodes.shape[1] - 1)
         lower = upper - 1
+
+        def inverse_excess(r):
+            # 1 / (A_PL - 1), as in radial.inverse_point_lens_excess.
+            root = r * jnp.sqrt(r * r + 4.0)
+            return 0.25 * root * (r * r + 2.0 + root)
+
+        observation = inverse_excess(radius)
+
+        def node_scale(node_radius, observation):
+            # radial.point_lens_scale: interpolate (A - 1) / g, multiply by g.
+            positive = observation > 0.0
+            return jnp.where(
+                positive,
+                inverse_excess(node_radius) / jnp.where(positive, observation, 1.0),
+                1.0,
+            )
+
         if self.radial_order == 1:
             lower_radius = jnp.take_along_axis(radial_nodes, lower, axis=1)
             upper_radius = jnp.take_along_axis(radial_nodes, upper, axis=1)
             fraction = (radius - lower_radius) / (upper_radius - lower_radius)
+            lower_weight = (1.0 - fraction) * node_scale(lower_radius, observation)
+            upper_weight = fraction * node_scale(upper_radius, observation)
 
             def interpolated_mode(mode):
                 local = coefficients[:, :, mode]
                 left = jnp.take_along_axis(local, lower, axis=1)
                 right = jnp.take_along_axis(local, upper, axis=1)
-                return (1.0 - fraction) * left + fraction * right
+                return lower_weight * left + upper_weight * right
 
         else:
             start = jnp.clip(lower - 1, 0, radial_nodes.shape[1] - 4)
@@ -151,6 +170,7 @@ class JAXFixedAlphaBatchEvaluator:
                             (radius - node_rows[:, :, other])
                             / (node_rows[:, :, target] - node_rows[:, :, other])
                         )
+            weights = weights * node_scale(node_rows, observation[:, :, None])
 
             def interpolated_mode(mode):
                 local = coefficients[:, :, mode]

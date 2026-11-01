@@ -9,6 +9,7 @@ import numpy as np
 from .config import PSPLGeometry
 from .radial import (
     DEFAULT_RADIAL_ORDER,
+    inverse_point_lens_excess,
     radial_stencil,
     segmented_angular_sums,
     validate_radial_order,
@@ -222,9 +223,11 @@ DEFAULT_MOMENT_GROUP_SIZE = 32
 class GroupedMoments:
     """Radial moments of consecutive observation groups, for linear stencils.
 
-    With ``radial_order=1`` every stencil weight is affine in the radius inside
-    one radial cell, so the contribution of a group of observations that all
-    fall in the same cell depends on them only through ``sum w x**k A`` for
+    With ``radial_order=1`` every stencil weight is ``g(r)`` times an affine
+    function of the radius inside one radial cell, times a per-node constant
+    (see ``radial.point_lens_scale``).  The contribution of a group of
+    observations that all fall in the same cell therefore depends on them only
+    through ``sum w g x**k A`` (linear) and ``sum w g**2 x**k A`` (square) for
     ``k = 0, 1, 2``, with ``x`` the radius offset from the group centre.  Those
     moments do not depend on the atlas nodes and are built once per basis.
     Binding a bucket then touches one moment row per interior group plus the raw
@@ -240,9 +243,9 @@ class GroupedMoments:
     starts: np.ndarray
     ends: np.ndarray
     centers: np.ndarray
-    # (3 * n_group, 2 * M + 1): sum w A, sum w x A, sum w x**2 A, group-major blocks.
+    # (3 * n_group, 2 * M + 1): sum w g**2 x**k A for k = 0, 1, 2, group-major blocks.
     square: np.ndarray
-    # (4 * n_group, M + 1): sum w A, sum w x A, sum wf A, sum wf x A.
+    # (4 * n_group, M + 1): sum w g A, sum w g x A, sum wf g A, sum wf g x A.
     linear: np.ndarray
 
     @property
@@ -285,10 +288,15 @@ def build_grouped_moments(
             np.asarray(operator @ real)
         ).view(np.complex128)
 
-    weight = basis.weight
-    weighted_flux = basis.weighted_flux_values
+    # A radius of exactly zero has an infinite point-lens excess; its group is
+    # never reduced from moments (see ``_grouped_angular_terms``).
+    inverse = inverse_point_lens_excess(basis.radius)
+    excess = np.divide(1.0, inverse, out=np.zeros_like(inverse), where=inverse > 0.0)
+    weight = basis.weight * excess
+    weighted_flux = basis.weighted_flux_values * excess
     square = moments(
-        [weight, weight * offset, weight * offset**2], basis.angular
+        [weight * excess, weight * excess * offset, weight * excess * offset**2],
+        basis.angular
     )
     linear = moments(
         [weight, weight * offset, weighted_flux, weighted_flux * offset],
@@ -319,6 +327,7 @@ def _grouped_angular_terms(
     interior = (
         (lower[first] == lower[last])
         & (basis.radius[first] >= nodes[0])
+        & (basis.radius[first] > 0.0)
         & (basis.radius[last] <= nodes[-1])
     )
     raw = np.repeat(~interior, moments.ends - moments.starts)
@@ -341,6 +350,9 @@ def _grouped_angular_terms(
     a = (moments.centers[group] - nodes[cell]) * inverse_width
     b = inverse_width
     upper = cell + 1
+    # Per-node point-lens factors 1 / g(r_k); g(r) itself is in the moments.
+    h_lower = inverse_point_lens_excess(nodes[cell])
+    h_upper = inverse_point_lens_excess(nodes[upper])
 
     def apply(
         n_row: int,
@@ -362,18 +374,18 @@ def _grouped_angular_terms(
         return np.asarray(product).view(np.complex128)
 
     # Linear weights: 1 - f at the lower node and f at the upper node, with
-    # f = a + b x.  Rows [0, n_node) are weighted, [n_node, 2 n_node) are flux.
+    # f = a + b x, each times its node factor.  Rows [0, n_node) are weighted, [n_node, 2 n_node) are flux.
     linear = apply(
         2 * n_node,
         [
-            (cell, 0, 1.0 - a),
-            (cell, 1, -b),
-            (upper, 0, a),
-            (upper, 1, b),
-            (cell + n_node, 2, 1.0 - a),
-            (cell + n_node, 3, -b),
-            (upper + n_node, 2, a),
-            (upper + n_node, 3, b),
+            (cell, 0, (1.0 - a) * h_lower),
+            (cell, 1, -b * h_lower),
+            (upper, 0, a * h_upper),
+            (upper, 1, b * h_upper),
+            (cell + n_node, 2, (1.0 - a) * h_lower),
+            (cell + n_node, 3, -b * h_lower),
+            (upper + n_node, 2, a * h_upper),
+            (upper + n_node, 3, b * h_upper),
         ],
         moments.linear,
         m_max + 1,
@@ -381,20 +393,24 @@ def _grouped_angular_terms(
     weighted += linear[:n_node]
     weighted_flux += linear[n_node:]
 
-    # Square weights: (1 - f)**2 and f**2 on lag 0, 2 f (1 - f) on lag 1.
+    # Square weights: (1 - f)**2 and f**2 on lag 0, 2 f (1 - f) on lag 1, times
+    # the product of the two node factors.
     one_minus = 1.0 - a
+    lower2 = h_lower * h_lower
+    upper2 = h_upper * h_upper
+    cross = h_lower * h_upper
     square = apply(
         2 * n_node,
         [
-            (cell, 0, one_minus * one_minus),
-            (cell, 1, -2.0 * one_minus * b),
-            (cell, 2, b * b),
-            (upper, 0, a * a),
-            (upper, 1, 2.0 * a * b),
-            (upper, 2, b * b),
-            (cell + n_node, 0, 2.0 * a * one_minus),
-            (cell + n_node, 1, 2.0 * b * (one_minus - a)),
-            (cell + n_node, 2, -2.0 * b * b),
+            (cell, 0, one_minus * one_minus * lower2),
+            (cell, 1, -2.0 * one_minus * b * lower2),
+            (cell, 2, b * b * lower2),
+            (upper, 0, a * a * upper2),
+            (upper, 1, 2.0 * a * b * upper2),
+            (upper, 2, b * b * upper2),
+            (cell + n_node, 0, 2.0 * a * one_minus * cross),
+            (cell + n_node, 1, 2.0 * b * (one_minus - a) * cross),
+            (cell + n_node, 2, -2.0 * b * b * cross),
         ],
         moments.square,
         2 * m_max + 1,

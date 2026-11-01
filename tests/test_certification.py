@@ -9,6 +9,7 @@ from hamagri._core.certification import (
 )
 from hamagri._core.radial import (
     interpolate_coefficients,
+    point_lens_scale,
     radial_stencil,
 )
 
@@ -98,15 +99,20 @@ def test_radial_certificate_covers_complete_piecewise_linear_reference() -> None
             reference_error,
             order=order,
         )
-        node_envelope = radial_interval_to_node_envelope(interval, order=order)
+        node_envelope = radial_interval_to_node_envelope(
+            interval, stored_nodes, order=order
+        )
         for segment in range(len(reference_nodes) - 1):
             radii = np.linspace(
                 reference_nodes[segment], reference_nodes[segment + 1], 31
             )
             fraction = (radii - radii[0]) / (radii[-1] - radii[0])
-            declared = reference[segment] + fraction[:, None] * (
-                reference[segment + 1] - reference[segment]
-            )
+            # The declared reference is linear in the point-lens ratio.
+            declared = (1.0 - fraction)[:, None] * point_lens_scale(
+                radii, reference_nodes[segment]
+            )[:, None] * reference[segment] + fraction[:, None] * point_lens_scale(
+                radii, reference_nodes[segment + 1]
+            )[:, None] * reference[segment + 1]
             reconstructed = interpolate_coefficients(
                 stored, radii, stored_nodes, order=order
             )
