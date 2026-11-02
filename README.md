@@ -44,7 +44,7 @@ The curated atlas (~72 GB) is prepared as a separate data release; public downlo
 
 ## Acknowledgments
 
-OpenAI Codex was used as a coding assistant during development.
+OpenAI Codex and Anthropic Claude Code were used as coding assistants during development.
 
 ## License
 
